@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,6 +16,7 @@ import (
 )
 
 func main() {
+	flag.Parse()
 	config.Init()
 	db.Init()
 	go service.RunHttp()

@@ -131,6 +131,7 @@ func GetUserCredit(c *gin.Context) {
 func GetUserCreditDetail(c *gin.Context) {
 	req := struct {
 		UserID   string `form:"user_id" binding:"required"`
+		Year     int    `form:"year" binding:"required"`
 		Month    uint8  `form:"month" binding:"required"`
 		Flag     uint8  `form:"flag" binding:"required"`
 		LastID   int    `form:"last_id"`
@@ -148,7 +149,7 @@ func GetUserCreditDetail(c *gin.Context) {
 		req.PageSize = 10
 	}
 
-	users, err := dao.User.GetCreditDetail(req.UserID, req.Month, req.Flag, req.LastID, req.PageSize)
+	users, err := dao.User.GetCreditDetail(req.UserID, req.Year, req.Month, req.Flag, req.LastID, req.PageSize)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "get credit detail"))
 		c.JSON(http.StatusInternalServerError, generr.ReadDB)
@@ -214,6 +215,7 @@ func GetBossCredit(c *gin.Context) {
 func GetBossCreditDetail(c *gin.Context) {
 	req := struct {
 		BossID   string `form:"boss_id" binding:"required"`
+		Year     int    `form:"year" binding:"required"`
 		Month    uint8  `form:"month" binding:"required"`
 		Flag     uint8  `form:"flag" binding:"required"`
 		LastID   int    `form:"last_id"`
@@ -227,7 +229,7 @@ func GetBossCreditDetail(c *gin.Context) {
 		return
 	}
 
-	boss, err := dao.Shop.GetCreditDetail(req.BossID, req.Month, req.Flag, req.LastID, req.PageSize)
+	boss, err := dao.Shop.GetCreditDetail(req.BossID, req.Year, req.Month, req.Flag, req.LastID, req.PageSize)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "get credit detail"))
 		c.JSON(http.StatusInternalServerError, generr.ReadDB)

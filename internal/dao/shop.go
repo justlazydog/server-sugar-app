@@ -52,16 +52,16 @@ func (*user) GetCredit(userID string) (offline, online float64, err error) {
 	return
 }
 
-func (*user) GetCreditDetail(userID string, month, flag uint8, lastID, pageSize int) (users []model.User, err error) {
+func (*user) GetCreditDetail(userID string, year int, month, flag uint8, lastID, pageSize int) (users []model.User, err error) {
 	var rows *sql.Rows
 	if lastID == 0 {
 		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,flag,created_at from shop_user "+
-			"where open_id = ? and month(created_at) = ? and flag = ? order by id desc limit ?",
-			userID, month, flag, pageSize)
+			"where open_id = ? and year(created_at) = ? month(created_at) = ? and flag = ? order by id desc limit ?",
+			userID, year, month, flag, pageSize)
 	} else {
 		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,flag,created_at from shop_user "+
-			"where open_id = ? and month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
-			userID, month, flag, lastID, pageSize)
+			"where open_id = ? and year(created_at) = ? month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
+			userID, year, month, flag, lastID, pageSize)
 	}
 
 	if err != nil {
@@ -161,16 +161,16 @@ func (*shop) GetCredit(userID string) (offline, online float64, err error) {
 	return
 }
 
-func (*shop) GetCreditDetail(userID string, month, flag uint8, lastID, pageSize int) (users []model.Boss, err error) {
+func (*shop) GetCreditDetail(userID string, year int, month, flag uint8, lastID, pageSize int) (users []model.Boss, err error) {
 	var rows *sql.Rows
 	if lastID == 0 {
 		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,flag,created_at from shop_boss "+
-			"where open_id = ? and month(created_at) = ? and flag = ? order by id desc limit ?",
-			userID, month, flag, pageSize)
+			"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ? order by id desc limit ?",
+			userID, year, month, flag, pageSize)
 	} else {
 		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,flag,created_at from shop_boss "+
-			"where open_id = ? and month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
-			userID, month, flag, lastID, pageSize)
+			"where open_id = ? and year(created_at) = ? month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
+			userID, year, month, flag, lastID, pageSize)
 	}
 
 	if err != nil {

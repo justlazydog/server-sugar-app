@@ -1,11 +1,18 @@
 package config
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
+
+var confPath string
+
+func init() {
+	flag.StringVar(&confPath, "conf", "../configs/", "default config path")
+}
 
 var (
 	Server server
@@ -20,13 +27,6 @@ type server struct {
 	Port       string `yaml:"port"`
 	DomainName string `yaml:"domain_name"`
 }
-
-// MySQL 配置
-// type mysqls struct {
-// 	OpenCloud   mysql `yaml:"open_cloud"`
-// 	OfflineShop mysql `yaml:"offline_shop"`
-// 	OnlineShop  mysql `yaml:"online_shop"`
-// }
 
 type mysql struct {
 	Host         string `yaml:"host"`
@@ -67,7 +67,7 @@ func Init() {
 
 func unmarshalServer() {
 	viper.SetConfigName("server")
-	viper.AddConfigPath("configs/")
+	viper.AddConfigPath(confPath)
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
@@ -83,7 +83,7 @@ func unmarshalServer() {
 
 func unmarshalMysql() {
 	viper.SetConfigName("mysql")
-	viper.AddConfigPath("configs/")
+	viper.AddConfigPath(confPath)
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
@@ -99,7 +99,7 @@ func unmarshalMysql() {
 
 func unmarshalSIE() {
 	viper.SetConfigName("sie")
-	viper.AddConfigPath("configs/")
+	viper.AddConfigPath(confPath)
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))

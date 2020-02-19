@@ -90,7 +90,7 @@ func Put(c *gin.Context) {
 		OrderID:       req.OrderID,
 		Amount:        amount,
 		Credit:        amount * BossMultiple * ExtraMultiple,
-		Multiple:      UserMultiple,
+		Multiple:      BossMultiple,
 		ExtraMultiple: ExtraMultiple,
 		Flag:          req.Flag,
 	}

@@ -55,11 +55,11 @@ func (*user) GetCredit(userID string) (offline, online float64, err error) {
 func (*user) GetCreditDetail(userID string, year int, month, flag uint8, lastID, pageSize int) (users []model.User, err error) {
 	var rows *sql.Rows
 	if lastID == 0 {
-		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,flag,created_at from shop_user "+
+		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at from shop_user "+
 			"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ? order by id desc limit ?",
 			userID, year, month, flag, pageSize)
 	} else {
-		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,flag,created_at from shop_user "+
+		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at from shop_user "+
 			"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
 			userID, year, month, flag, lastID, pageSize)
 	}
@@ -73,7 +73,8 @@ func (*user) GetCreditDetail(userID string, year int, month, flag uint8, lastID,
 			user     model.User
 			createAt string
 		)
-		err = rows.Scan(&user.ID, &user.OpenID, &user.Amount, &user.Credit, &user.OrderID, &user.Multiple, &user.Flag, &createAt)
+		err = rows.Scan(&user.ID, &user.OpenID, &user.Amount, &user.Credit, &user.OrderID, &user.Multiple,
+			&user.ExtraMultiple, &user.Flag, &createAt)
 		if err != nil {
 			return
 		}
@@ -164,11 +165,11 @@ func (*shop) GetCredit(userID string) (offline, online float64, err error) {
 func (*shop) GetCreditDetail(userID string, year int, month, flag uint8, lastID, pageSize int) (users []model.Boss, err error) {
 	var rows *sql.Rows
 	if lastID == 0 {
-		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,flag,created_at from shop_boss "+
+		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at from shop_boss "+
 			"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ? order by id desc limit ?",
 			userID, year, month, flag, pageSize)
 	} else {
-		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,flag,created_at from shop_boss "+
+		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at from shop_boss "+
 			"where open_id = ? and year(created_at) = ? month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
 			userID, year, month, flag, lastID, pageSize)
 	}
@@ -182,7 +183,8 @@ func (*shop) GetCreditDetail(userID string, year int, month, flag uint8, lastID,
 			user     model.Boss
 			createAt string
 		)
-		err = rows.Scan(&user.ID, &user.OpenID, &user.Amount, &user.Credit, &user.OrderID, &user.Multiple, &user.Flag, &createAt)
+		err = rows.Scan(&user.ID, &user.OpenID, &user.Amount, &user.Credit, &user.OrderID, &user.Multiple,
+			&user.ExtraMultiple, &user.Flag, &createAt)
 		if err != nil {
 			return
 		}

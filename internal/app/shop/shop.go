@@ -13,6 +13,12 @@ import (
 	"server-sugar-app/internal/pkg/generr"
 )
 
+const (
+	ExtraMultiple = 1
+	BossMultiple  = 2
+	UserMultiple  = 10
+)
+
 func Put(c *gin.Context) {
 	req := struct {
 		UserID  string `json:"user_id" form:"user_id" binding:"required"`   // 用户ID
@@ -61,12 +67,14 @@ func Put(c *gin.Context) {
 	}
 
 	user := model.User{
-		UID:     userUID,
-		OpenID:  req.UserID,
-		OrderID: req.OrderID,
-		Amount:  amount,
-		Credit:  amount * 10,
-		Flag:    req.Flag,
+		UID:           userUID,
+		OpenID:        req.UserID,
+		OrderID:       req.OrderID,
+		Amount:        amount,
+		Credit:        amount * UserMultiple * ExtraMultiple,
+		Multiple:      UserMultiple,
+		ExtraMultiple: ExtraMultiple,
+		Flag:          req.Flag,
 	}
 
 	err = dao.User.Add(user)
@@ -77,12 +85,14 @@ func Put(c *gin.Context) {
 	}
 
 	shop := model.Boss{
-		UID:     bossUID,
-		OpenID:  req.BossID,
-		OrderID: req.OrderID,
-		Amount:  amount,
-		Credit:  amount * 2,
-		Flag:    req.Flag,
+		UID:           bossUID,
+		OpenID:        req.BossID,
+		OrderID:       req.OrderID,
+		Amount:        amount,
+		Credit:        amount * BossMultiple * ExtraMultiple,
+		Multiple:      UserMultiple,
+		ExtraMultiple: ExtraMultiple,
+		Flag:          req.Flag,
 	}
 	err = dao.Shop.Add(shop)
 	if err != nil {

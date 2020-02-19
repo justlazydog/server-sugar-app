@@ -4,27 +4,29 @@ import "time"
 
 // 用户信息表结构
 type User struct {
-	ID        int     `json:"id"`         // 数据ID
-	UID       string  `json:"-"`          // 用户uid
-	OpenID    string  `json:"open_id"`    // 用户Open_id
-	OrderID   string  `json:"order_id"`   // 挂单ID
-	Amount    float64 `json:"amount"`     // 销毁金额
-	Credit    float64 `json:"credit"`     // 用户积分
-	Multiple  float64 `json:"multiple"`   // 倍数
-	Flag      uint8   `json:"flag"`       // 1-线下 2-线上
-	CreatedAt int64   `json:"created_at"` // 创建时间（此处为Unix时间戳）
+	ID            int     `json:"id"`             // 数据ID
+	UID           string  `json:"-"`              // 用户uid
+	OpenID        string  `json:"open_id"`        // 用户Open_id
+	OrderID       string  `json:"order_id"`       // 挂单ID
+	Amount        float64 `json:"amount"`         // 销毁金额
+	Credit        float64 `json:"credit"`         // 用户积分
+	Multiple      float64 `json:"multiple"`       // 倍数
+	ExtraMultiple float64 `json:"extra_multiple"` // 额外倍率
+	Flag          uint8   `json:"flag"`           // 1-线下 2-线上
+	CreatedAt     int64   `json:"created_at"`     // 创建时间（此处为Unix时间戳）
 }
 
 type Boss struct {
-	ID        int     `json:"id"`         // 数据ID
-	UID       string  `json:"-"`          // 店主uid
-	OpenID    string  `json:"open_id"`    // 店主Open_id
-	OrderID   string  `json:"order_id"`   // 挂单ID
-	Amount    float64 `json:"amount"`     // 销毁金额
-	Credit    float64 `json:"credit"`     // 商户积分
-	Multiple  float64 `json:"multiple"`   // 倍数
-	Flag      uint8   `json:"flag"`       // 1-线下 2-线上
-	CreatedAt int64   `json:"created_at"` // 创建时间（此处为Unix时间戳）
+	ID            int     `json:"id"`             // 数据ID
+	UID           string  `json:"-"`              // 店主uid
+	OpenID        string  `json:"open_id"`        // 店主Open_id
+	OrderID       string  `json:"order_id"`       // 挂单ID
+	Amount        float64 `json:"amount"`         // 销毁金额
+	Credit        float64 `json:"credit"`         // 商户积分
+	Multiple      float64 `json:"multiple"`       // 倍数
+	ExtraMultiple float64 `json:"extra_multiple"` // 额外倍率
+	Flag          uint8   `json:"flag"`           // 1-线下 2-线上
+	CreatedAt     int64   `json:"created_at"`     // 创建时间（此处为Unix时间戳）
 }
 
 type Sugar struct {

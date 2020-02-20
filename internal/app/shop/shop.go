@@ -84,7 +84,7 @@ func Put(c *gin.Context) {
 		return
 	}
 
-	shop := model.Boss{
+	boss := model.Boss{
 		UID:           bossUID,
 		OpenID:        req.BossID,
 		OrderID:       req.OrderID,
@@ -94,7 +94,7 @@ func Put(c *gin.Context) {
 		ExtraMultiple: ExtraMultiple,
 		Flag:          req.Flag,
 	}
-	err = dao.Shop.Add(shop)
+	err = dao.Boss.Add(boss)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "add shop record"))
 		c.JSON(http.StatusBadRequest, generr.UpdateDB)
@@ -214,7 +214,7 @@ func GetBossCredit(c *gin.Context) {
 		return
 	}
 
-	offline, online, err := dao.Shop.GetCredit(req.BossID)
+	offline, online, err := dao.Boss.GetCredit(req.BossID)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "get credit"))
 		c.JSON(http.StatusInternalServerError, generr.ReadDB)
@@ -249,14 +249,14 @@ func GetBossCreditDetail(c *gin.Context) {
 		return
 	}
 
-	boss, err := dao.Shop.GetCreditDetail(req.BossID, req.Year, req.Month, req.Flag, req.LastID, req.PageSize)
+	boss, err := dao.Boss.GetCreditDetail(req.BossID, req.Year, req.Month, req.Flag, req.LastID, req.PageSize)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "get credit detail"))
 		c.JSON(http.StatusInternalServerError, generr.ReadDB)
 		return
 	}
 
-	num, err := dao.Shop.GetCreditDetailNum(req.BossID, req.Year, req.Month, req.Flag)
+	num, err := dao.Boss.GetCreditDetailNum(req.BossID, req.Year, req.Month, req.Flag)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "get credit detail"))
 		c.JSON(http.StatusInternalServerError, generr.ReadDB)
@@ -271,5 +271,106 @@ func GetBossCreditDetail(c *gin.Context) {
 		Num     int          `json:"num"`
 		Details []model.Boss `json:"details"`
 	}{Num: num, Details: boss}})
+	return
+}
+
+func ListBossCredit(c *gin.Context) {
+	req := struct {
+		PageNum  int `form:"page_num"`
+		PageSize int `form:"page_size"`
+	}{}
+
+	err := c.ShouldBind(&req)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
+
+	if req.PageNum == 0 {
+		req.PageNum = 1
+	}
+
+	allCredit, err := dao.Boss.GetAllCredit()
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get boss all credit"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	num, err := dao.Boss.GetBossNum()
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get boss num"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	rsp, err := dao.Boss.ListCredit(req.PageNum, req.PageSize)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "list boss credit"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", struct {
+		AllCredit float64                   `json:"all_credit"`
+		Num       int                       `json:"num"`
+		List      []model.ListBossCreditRsp `json:"list"`
+	}{AllCredit: allCredit, Num: num, List: rsp}})
+	return
+}
+
+func ListBossCreditDetail(c *gin.Context) {
+	req := struct {
+		BossID   string `form:"boss_id" binding:"required"`
+		PageNum  int    `form:"page_num"`
+		PageSize int    `form:"page_size"`
+	}{}
+
+	err := c.ShouldBind(&req)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	if req.PageSize == 0 {
+		req.PageSize = 10
+	}
+
+	if req.PageNum == 0 {
+		req.PageNum = 1
+	}
+
+	boss, err := dao.Boss.ListCreditDetail(req.BossID, req.PageNum, req.PageSize)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "list boss credit detail"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	num, err := dao.Boss.GetBossRecordNum(req.BossID)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "list boss record num"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", struct {
+		Num  int          `json:"num"`
+		List []model.Boss `json:"list"`
+	}{Num: num, List: boss}})
 	return
 }

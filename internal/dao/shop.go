@@ -126,20 +126,20 @@ func (*user) GetUsedAmount() (offline, online float64, err error) {
 	return
 }
 
-type shop struct {
+type boss struct {
 }
 
-var Shop = new(shop)
+var Boss = new(boss)
 
-func (*shop) Add(shop model.Boss) (err error) {
+func (*boss) Add(boss model.Boss) (err error) {
 	_, err = db.MysqlCli.Exec("insert into shop_boss (uid,open_id,order_id,amount,credit,multiple,extra_multiple,flag) values (?,?,?,?,?,?,?,?)",
-		shop.UID, shop.OpenID, shop.OrderID, shop.Amount, shop.Credit, shop.Multiple, shop.ExtraMultiple, shop.Flag)
+		boss.UID, boss.OpenID, boss.OrderID, boss.Amount, boss.Credit, boss.Multiple, boss.ExtraMultiple, boss.Flag)
 	return
 }
 
-func (*shop) GetCredit(userID string) (offline, online float64, err error) {
+func (*boss) GetCredit(bossID string) (offline, online float64, err error) {
 	rows, err := db.MysqlCli.Query(
-		"select flag,sum(credit) as all_credit from shop_boss where open_id = ? group by flag ", userID)
+		"select flag,sum(credit) as all_credit from shop_boss where open_id = ? group by flag ", bossID)
 	if err != nil {
 		return
 	}
@@ -170,16 +170,16 @@ func (*shop) GetCredit(userID string) (offline, online float64, err error) {
 	return
 }
 
-func (*shop) GetCreditDetail(userID string, year int, month, flag uint8, lastID, pageSize int) (users []model.Boss, err error) {
+func (*boss) GetCreditDetail(bossID string, year int, month, flag uint8, lastID, pageSize int) (users []model.Boss, err error) {
 	var rows *sql.Rows
 	if lastID == 0 {
 		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at from shop_boss "+
 			"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ? order by id desc limit ?",
-			userID, year, month, flag, pageSize)
+			bossID, year, month, flag, pageSize)
 	} else {
 		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at from shop_boss "+
 			"where open_id = ? and year(created_at) = ? month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
-			userID, year, month, flag, lastID, pageSize)
+			bossID, year, month, flag, lastID, pageSize)
 	}
 
 	if err != nil {
@@ -204,10 +204,71 @@ func (*shop) GetCreditDetail(userID string, year int, month, flag uint8, lastID,
 	return
 }
 
-func (*shop) GetCreditDetailNum(userID string, year int, month, flag uint8) (num int, err error) {
+func (*boss) GetCreditDetailNum(bossID string, year int, month, flag uint8) (num int, err error) {
 	row := db.MysqlCli.QueryRow("select count(*) from shop_boss "+
 		"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ?",
-		userID, year, month, flag)
+		bossID, year, month, flag)
+	err = row.Scan(&num)
+	return
+}
+
+func (*boss) GetAllCredit() (credit float64, err error) {
+	row := db.MysqlCli.QueryRow("select sum(credit) from shop_boss")
+	err = row.Scan(&credit)
+	return
+}
+
+func (*boss) GetBossNum() (num int, err error) {
+	row := db.MysqlCli.QueryRow("select count(distinct open_id) from shop_boss")
+	err = row.Scan(&num)
+	return
+}
+
+func (*boss) ListCredit(pageNum, pageSize int) (rsp []model.ListBossCreditRsp, err error) {
+	rows, err := db.MysqlCli.Query("select open_id, sum(credit) as all_credit, count(*) as num "+
+		"from shop_boss group by open_id limit ?,?", pageSize*(pageNum-1), pageSize)
+	if err != nil {
+		return
+	}
+
+	for rows.Next() {
+		var r model.ListBossCreditRsp
+		err = rows.Scan(&r.OpenID, &r.AllCredit, &r.Num)
+		if err != nil {
+			return
+		}
+		rsp = append(rsp, r)
+	}
+	return
+}
+
+func (*boss) ListCreditDetail(bossID string, pageNum, pageSize int) (rsp []model.Boss, err error) {
+	rows, err := db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at "+
+		"from shop_boss where open_id = ? order by id desc limit ?,?", bossID, pageSize*(pageNum-1), pageSize)
+	if err != nil {
+		return
+	}
+
+	for rows.Next() {
+		var (
+			user     model.Boss
+			createAt string
+		)
+		err = rows.Scan(&user.ID, &user.OpenID, &user.Amount, &user.Credit, &user.OrderID, &user.Multiple,
+			&user.ExtraMultiple, &user.Flag, &createAt)
+		if err != nil {
+			return
+		}
+
+		t, _ := time.Parse("2006-01-02 15:04:05", createAt)
+		user.CreatedAt = t.Unix()
+		rsp = append(rsp, user)
+	}
+	return
+}
+
+func (*boss) GetBossRecordNum(bossID string) (num int, err error) {
+	row := db.MysqlCli.QueryRow("select count(*) from shop_boss where open_id = ?", bossID)
 	err = row.Scan(&num)
 	return
 }

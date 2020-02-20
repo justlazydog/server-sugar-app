@@ -86,6 +86,14 @@ func (*user) GetCreditDetail(userID string, year int, month, flag uint8, lastID,
 	return
 }
 
+func (*user) GetCreditDetailNum(userID string, year int, month, flag uint8) (num int, err error) {
+	row := db.MysqlCli.QueryRow("select count(*) from shop_user "+
+		"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ?",
+		userID, year, month, flag)
+	err = row.Scan(&num)
+	return
+}
+
 func (*user) GetUsedAmount() (offline, online float64, err error) {
 	rows, err := db.MysqlCli.Query("select flag,sum(amount) as all_amount from shop_user group by flag")
 	if err != nil {
@@ -193,5 +201,13 @@ func (*shop) GetCreditDetail(userID string, year int, month, flag uint8, lastID,
 		user.CreatedAt = t.Unix()
 		users = append(users, user)
 	}
+	return
+}
+
+func (*shop) GetCreditDetailNum(userID string, year int, month, flag uint8) (num int, err error) {
+	row := db.MysqlCli.QueryRow("select count(*) from shop_boss "+
+		"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ?",
+		userID, year, month, flag)
+	err = row.Scan(&num)
 	return
 }

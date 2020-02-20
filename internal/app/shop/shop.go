@@ -166,11 +166,21 @@ func GetUserCreditDetail(c *gin.Context) {
 		return
 	}
 
+	num, err := dao.User.GetCreditDetailNum(req.UserID, req.Year, req.Month, req.Flag)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get credit detail"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
 	c.JSON(http.StatusOK, struct {
 		Code int         `json:"code"`
 		Msg  string      `json:"msg"`
 		Data interface{} `json:"data"`
-	}{200, "success", users})
+	}{200, "success", struct {
+		Num     int          `json:"num"`
+		Details []model.User `json:"details"`
+	}{Num: num, Details: users}})
 	return
 }
 
@@ -246,10 +256,20 @@ func GetBossCreditDetail(c *gin.Context) {
 		return
 	}
 
+	num, err := dao.Shop.GetCreditDetailNum(req.BossID, req.Year, req.Month, req.Flag)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get credit detail"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
 	c.JSON(http.StatusOK, struct {
 		Code int         `json:"code"`
 		Msg  string      `json:"msg"`
 		Data interface{} `json:"data"`
-	}{200, "success", boss})
+	}{200, "success", struct {
+		Num     int          `json:"num"`
+		Details []model.Boss `json:"details"`
+	}{Num: num, Details: boss}})
 	return
 }

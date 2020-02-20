@@ -213,20 +213,20 @@ func (*boss) GetCreditDetailNum(bossID string, year int, month, flag uint8) (num
 }
 
 func (*boss) GetAllCredit() (credit float64, err error) {
-	row := db.MysqlCli.QueryRow("select sum(credit) from shop_boss")
+	row := db.MysqlCli.QueryRow("select sum(credit) from shop_boss where flag = 2")
 	err = row.Scan(&credit)
 	return
 }
 
 func (*boss) GetBossNum() (num int, err error) {
-	row := db.MysqlCli.QueryRow("select count(distinct open_id) from shop_boss")
+	row := db.MysqlCli.QueryRow("select count(distinct open_id) from shop_boss where flag = 2")
 	err = row.Scan(&num)
 	return
 }
 
 func (*boss) ListCredit(pageNum, pageSize int) (rsp []model.ListBossCreditRsp, err error) {
 	rows, err := db.MysqlCli.Query("select open_id, sum(credit) as all_credit, count(*) as num "+
-		"from shop_boss group by open_id limit ?,?", pageSize*(pageNum-1), pageSize)
+		"from shop_boss where flag = 2 group by open_id limit ?,?", pageSize*(pageNum-1), pageSize)
 	if err != nil {
 		return
 	}
@@ -244,7 +244,7 @@ func (*boss) ListCredit(pageNum, pageSize int) (rsp []model.ListBossCreditRsp, e
 
 func (*boss) ListCreditDetail(bossID string, pageNum, pageSize int) (rsp []model.Boss, err error) {
 	rows, err := db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at "+
-		"from shop_boss where open_id = ? order by id desc limit ?,?", bossID, pageSize*(pageNum-1), pageSize)
+		"from shop_boss where open_id = ? and flag = 2 order by id desc limit ?,?", bossID, pageSize*(pageNum-1), pageSize)
 	if err != nil {
 		return
 	}
@@ -268,7 +268,7 @@ func (*boss) ListCreditDetail(bossID string, pageNum, pageSize int) (rsp []model
 }
 
 func (*boss) GetBossRecordNum(bossID string) (num int, err error) {
-	row := db.MysqlCli.QueryRow("select count(*) from shop_boss where open_id = ?", bossID)
+	row := db.MysqlCli.QueryRow("select count(*) from shop_boss where open_id = ? and flag = 2", bossID)
 	err = row.Scan(&num)
 	return
 }

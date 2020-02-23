@@ -18,51 +18,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// todo
-func GetOpenID(uid string) (openID string, err error) {
-	var (
-		rsp  *http.Response
-		body []byte
-		ok   bool
-	)
-	rsp, err = http.Get("")
-	if err != nil {
-		err = errors.Wrap(err, "get open_id")
-		return
-	}
-
-	body, err = ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		err = errors.Wrap(err, "read rsp body")
-		return
-	}
-	defer rsp.Body.Close()
-
-	type Result struct {
-		Code int                    `json:"code"`
-		Msg  string                 `json:"msg"`
-		Data map[string]interface{} `json:"data"`
-	}
-	var res Result
-	err = json.Unmarshal(body, &res)
-	if err != nil {
-		err = errors.Wrap(err, "json unmarshal")
-		return
-	}
-
-	if rsp.StatusCode != 200 {
-		err = errors.Errorf("rsp status code [$d], msg: %s", rsp.StatusCode, res.Msg)
-		return
-	}
-
-	openID, ok = res.Data["open_id"].(string)
-	if !ok {
-		err = errors.Errorf("open_id is not string, msg: %s", res.Msg)
-		return
-	}
-	return
-}
-
 // 解析压缩账户信息文件
 func ParseCompressAccountFile(filename string) (m map[string]float64, sumBalance float64, err error) {
 	rc, err := zip.OpenReader(filename)

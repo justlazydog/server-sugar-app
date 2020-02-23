@@ -187,9 +187,13 @@ func cloneMap(m map[string]float64) map[string]float64 {
 	return tmp
 }
 
-// todo
 // 获取最新SIE销毁量
 func getUsedShopSIE() (usedSIE float64, err error) {
+	off, on, err := dao.User.GetUsedAmount()
+	if err != nil {
+		return
+	}
+	usedSIE = off + on
 	return
 }
 

@@ -178,7 +178,7 @@ func (*boss) GetCreditDetail(bossID string, year int, month, flag uint8, lastID,
 			bossID, year, month, flag, pageSize)
 	} else {
 		rows, err = db.MysqlCli.Query("select id,open_id,amount,credit,order_id,multiple,extra_multiple,flag,created_at from shop_boss "+
-			"where open_id = ? and year(created_at) = ? month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
+			"where open_id = ? and year(created_at) = ? and month(created_at) = ? and flag = ? and id < ? order by id desc limit ?",
 			bossID, year, month, flag, lastID, pageSize)
 	}
 

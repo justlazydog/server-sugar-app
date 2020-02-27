@@ -108,6 +108,19 @@ func ReceiveCalcFile(c *gin.Context) {
 	return
 }
 
+// 下载奖励文件
+func DownloadRewardFile(c *gin.Context) {
+	var err error
+	filename := c.Param("filename")
+	if filename == "" {
+		err = errors.New("no param")
+		log.Errorf("err: %+v", errors.Wrap(err, "parse 'filename'"))
+		c.JSON(http.StatusBadRequest, generr.SugarNoToken)
+		return
+	}
+	c.File(curFilePath + filename)
+}
+
 func ManualStart(c *gin.Context) {
 	req := struct {
 		Filenames   []string `form:"filenames" binding:"required"`

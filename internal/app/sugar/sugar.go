@@ -41,7 +41,7 @@ func StartSugar() {
 	expectToken = fmt.Sprintf("%x", token)
 	for _, v := range sieCfg.Sugars {
 		// callBackUrl := config.Server.DomainName + "/sugar/upload/" + ExpectToken + "/" + v.Origin
-		callBackUrl := fmt.Sprintf("http://%s:%s/sugar/upload/%s/%s", config.Server.Host, config.Server.Port, expectToken, v.Origin)
+		callBackUrl := fmt.Sprintf("%s/sugar/upload/%s/%s", config.Server.DomainName, expectToken, v.Origin)
 		t, _ := time.Parse("2006-01-02 15:04:05", time.Now().Format("2006-01-02")+" 16:00:00")
 		postBody := fmt.Sprintf(`{"callback":"%s","timestamp":%d}`, callBackUrl, t.Unix())
 		_, err = util.PostIMServer(v.Request, postBody)
@@ -291,10 +291,10 @@ func noticeIMDownloadRewardFile(filenames []string) (err error) {
 	)
 	for i, filename := range filenames {
 		if config.Server.Env == "pro" {
-			callBackUrl = "https://open.isecret.im" + "/manager/exchange/reward/download/" + filename
+			callBackUrl = config.Server.DomainName + "/manager/exchange/reward/download/" + filename
 			postUrl = "https://account.isecret.im" + "/open/SieGame/UpdateBalaneFromFile"
 		} else {
-			callBackUrl = "https://testm.isecret.im" + "/manager/exchange/reward/download/" + filename
+			callBackUrl = config.Server.DomainName + "/manager/exchange/reward/download/" + filename
 			postUrl = "https://accounttest.isecret.im" + "/open/SieGame/UpdateBalaneFromFile"
 		}
 

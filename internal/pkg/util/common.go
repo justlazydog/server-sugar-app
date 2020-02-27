@@ -92,25 +92,27 @@ func PostIMServer(url, body string) (rsp *http.Response, err error) {
 			break
 		}
 	}
-	if err == nil && rsp.StatusCode != 200 {
-		// 获取状态码非200原因
-		rspBody, _ := ioutil.ReadAll(rsp.Body)
-		rsp.Body.Close()
-
-		type Result struct {
-			Code int                    `json:"code"`
-			Msg  string                 `json:"msg"`
-			Data map[string]interface{} `json:"data"`
-		}
-
-		var res Result
-		err = json.Unmarshal(rspBody, &res)
-		if err != nil {
-			err = errors.Wrap(err, "json unmarshal")
-			return
-		}
-		err = errors.Wrap(fmt.Errorf("post [%s] response code is [%d]", url, rsp.StatusCode), res.Msg)
+	if err != nil {
 		return
+	}
+
+	rspBody, _ := ioutil.ReadAll(rsp.Body)
+	rsp.Body.Close()
+
+	type Result struct {
+		Code int                    `json:"code"`
+		Msg  string                 `json:"msg"`
+		Data map[string]interface{} `json:"data"`
+	}
+
+	var res Result
+	err = json.Unmarshal(rspBody, &res)
+	if err != nil {
+		err = errors.Wrap(err, "json unmarshal")
+		return
+	}
+	if res.Code != 200 {
+		err = errors.Wrap(fmt.Errorf("post [%s] response code is [%d]", url, rsp.StatusCode), res.Msg)
 	}
 	return
 }

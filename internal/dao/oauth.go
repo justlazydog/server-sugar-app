@@ -15,7 +15,7 @@ func (*oauth) GetUID(openID string) (uid string, err error) {
 	if config.Server.Env == "test" {
 		appID = "04565e551f7ff066"
 	} else {
-		appID = ""
+		appID = "576ae8b341e42274"
 	}
 
 	row := db.MysqlCli.QueryRow("select uid from oauth where open_id = ? and app_id = ?",

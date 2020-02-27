@@ -27,6 +27,7 @@ const (
 var curFilePath string
 
 func StartSugar() {
+	log.Info("start sugar")
 	// 每次发放糖果将文件置于新文件夹中
 	dirname := time.Now().Format("2006-01-02") + "/"
 	curFilePath = "sugar/" + dirname
@@ -291,10 +292,10 @@ func noticeIMDownloadRewardFile(filenames []string) (err error) {
 	)
 	for i, filename := range filenames {
 		if config.Server.Env == "pro" {
-			callBackUrl = config.Server.DomainName + "/manager/exchange/reward/download/" + filename
+			callBackUrl = config.Server.DomainName + "/sugar/download/" + filename
 			postUrl = "https://account.isecret.im" + "/open/SieGame/UpdateBalaneFromFile"
 		} else {
-			callBackUrl = config.Server.DomainName + "/manager/exchange/reward/download/" + filename
+			callBackUrl = config.Server.DomainName + "/sugar/download/" + filename
 			postUrl = "https://accounttest.isecret.im" + "/open/SieGame/UpdateBalaneFromFile"
 		}
 

@@ -85,6 +85,8 @@ func writeForceFile(user map[string]float64, amount map[string]float64, flag int
 				return
 			}
 		}
+		// 此时内存中已不需要群用户关系
+		group.Flush()
 	}
 	return filename
 }

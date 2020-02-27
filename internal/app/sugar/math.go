@@ -4,8 +4,10 @@ import (
 	"math"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"server-sugar-app/config"
 	"server-sugar-app/internal/app/group"
@@ -20,6 +22,8 @@ import (
 	平台总算力=所有用户总持币算力之和
 */
 func rewardOne(in []map[string]float64, out, outf map[string]float64, sumAmount float64) error {
+	log.Info("Start calc reward one...")
+	t := time.Now()
 	// 持有发行数量, 总算力
 	hashRateTotal := 0.0
 	// 计算算力
@@ -67,6 +71,7 @@ func rewardOne(in []map[string]float64, out, outf map[string]float64, sumAmount 
 		os.Remove(filename)
 	}()
 
+	log.Info("calc reward one over, cost time: %v", time.Since(t))
 	return nil
 }
 
@@ -76,6 +81,8 @@ func rewardOne(in []map[string]float64, out, outf map[string]float64, sumAmount 
 	用户持币算力=大区团队算力的0.3次方+所有小区团队算力的0.7次方之和（每个小区的0.7次相加）
 */
 func rewardTwo(in map[string]float64, opM map[string]float64, out, outf map[string]float64, sumAmount float64) error {
+	log.Info("start calc reward two...")
+	t := time.Now()
 	group.Cond.L.Lock()
 	for !group.RelateUpdated {
 		group.Cond.Wait()
@@ -134,6 +141,8 @@ func rewardTwo(in map[string]float64, opM map[string]float64, out, outf map[stri
 		}
 		os.Remove(filename)
 	}()
+
+	log.Info("calc reward two over, cost time: %v", time.Since(t))
 	return nil
 }
 

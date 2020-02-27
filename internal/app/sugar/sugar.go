@@ -286,10 +286,8 @@ func getAccountsBalanceInOrOut(accounts []string, flag int) (
 
 // 通知IM来下载奖励文件
 func noticeIMDownloadRewardFile(filenames []string) (err error) {
-	var (
-		callBackUrl string
-		postUrl     string
-	)
+	log.Info("start notice IM to download reward file")
+	var callBackUrl, postUrl string
 	for i, filename := range filenames {
 		if config.Server.Env == "pro" {
 			callBackUrl = config.Server.DomainName + "/sugar/download/" + filename
@@ -306,5 +304,5 @@ func noticeIMDownloadRewardFile(filenames []string) (err error) {
 		}
 		time.Sleep(time.Millisecond * 500)
 	}
-	return nil
+	return
 }

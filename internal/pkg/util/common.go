@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // 解析压缩账户信息文件
@@ -68,9 +69,8 @@ func ParseCompressAccountFile(filename string) (m map[string]float64, sumBalance
 }
 
 func PostIMServer(url, body string) (rsp *http.Response, err error) {
-	var (
-		req *http.Request
-	)
+	log.Infof("post [%s]", url)
+	var req *http.Request
 	for i := 1; i <= 3; i++ {
 		var nowTime = time.Now().Unix()
 		sign := md5.Sum([]byte(fmt.Sprintf("%s%d%s", body, nowTime, "asdfeaegrgrew&asdfeaegrgrew%asdfeaegrgrew")))

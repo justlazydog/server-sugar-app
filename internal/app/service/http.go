@@ -26,8 +26,8 @@ func RunHttp() {
 	r.GET("/shop/boss/credit/detail/list", shop.ListBossCreditDetail)
 
 	r.POST("/sugar/upload/:token/:filename", sugar.ReceiveCalcFile)
-	r.POST("/sugar/download/:filename", sugar.DownloadRewardFile)
 	r.POST("/sugar/start/manual", sugar.ManualStart)
+	r.GET("/sugar/download/:filename", sugar.DownloadRewardFile)
 
 	srv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port),

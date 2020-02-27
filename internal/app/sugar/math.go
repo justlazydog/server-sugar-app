@@ -71,7 +71,7 @@ func rewardOne(in []map[string]float64, out, outf map[string]float64, sumAmount 
 		os.Remove(filename)
 	}()
 
-	log.Info("calc reward one over, cost time: %v", time.Since(t))
+	log.Infof("calc reward one over, cost time: %v", time.Since(t))
 	return nil
 }
 
@@ -142,7 +142,7 @@ func rewardTwo(in map[string]float64, opM map[string]float64, out, outf map[stri
 		os.Remove(filename)
 	}()
 
-	log.Info("calc reward two over, cost time: %v", time.Since(t))
+	log.Infof("calc reward two over, cost time: %v", time.Since(t))
 	return nil
 }
 

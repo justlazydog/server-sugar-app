@@ -11,7 +11,7 @@ import (
 var confPath string
 
 func init() {
-	flag.StringVar(&confPath, "conf", "../configs/", "default config path")
+	flag.StringVar(&confPath, "conf", "configs/", "default config path")
 }
 
 var (

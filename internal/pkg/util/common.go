@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -80,7 +81,7 @@ func PostIMServer(url, body string) (rsp *http.Response, err error) {
 		}
 
 		req.Header.Set("time", fmt.Sprintf("%d", nowTime))
-		req.Header.Set("sign", string(sign[:]))
+		req.Header.Set("sign", hex.EncodeToString(sign[:]))
 		req.Header.Set("content-type", "application/json")
 
 		rsp, err = http.DefaultClient.Do(req)

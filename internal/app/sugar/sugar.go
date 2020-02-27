@@ -1,14 +1,17 @@
 package sugar
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
 	"server-sugar-app/config"
@@ -18,9 +21,36 @@ import (
 )
 
 const (
-	FilePath  = "sugar/"
 	Precision = 1000000
 )
+
+var curFilePath string
+
+func StartSugar() {
+	// 每次发放糖果将文件置于新文件夹中
+	dirname := time.Now().Format("2006-01-02") + "/"
+	curFilePath = "sugar/" + dirname
+	err := os.MkdirAll(curFilePath, 0755)
+	if err != nil {
+		log.Errorf("err: %+v", errors.WithMessage(err, "create sugar dir"))
+		return
+	}
+
+	sieCfg := config.SIE
+	token := md5.Sum([]byte(util.RandString(16) + fmt.Sprintf("%d", time.Now().Unix())))
+	expectToken = fmt.Sprintf("%x", token)
+	for _, v := range sieCfg.Sugars {
+		// callBackUrl := config.Server.DomainName + "/sugar/upload/" + ExpectToken + "/" + v.Origin
+		callBackUrl := fmt.Sprintf("http://%s:%s/sugar/upload/%s/%s", config.Server.Host, config.Server.Port, expectToken, v.Origin)
+		t, _ := time.Parse("2006-01-02 15:04:05", time.Now().Format("2006-01-02")+" 16:00:00")
+		postBody := fmt.Sprintf(`{"callback":"%s","timestamp":%d}`, callBackUrl, t.Unix())
+		_, err = util.PostIMServer(v.Request, postBody)
+		if err != nil {
+			log.Errorf("err: %+v", errors.WithMessage(err, "post im server"))
+			return
+		}
+	}
+}
 
 // 计算糖果奖励
 func calcReward(files []string) (err error) {
@@ -32,7 +62,7 @@ func calcReward(files []string) (err error) {
 	sie := config.SIE
 	for i, filename := range files {
 		key := strings.Split(filename, "_")[0]
-		m, sum, err := util.ParseCompressAccountFile(FilePath + filename)
+		m, sum, err := util.ParseCompressAccountFile(curFilePath + filename)
 		if err != nil {
 			return errors.Wrap(err, "parse compress file")
 		}
@@ -130,6 +160,7 @@ func calcReward(files []string) (err error) {
 		return errors.Wrap(err, "write reward file")
 	}
 
+	// fmt.Println(rewardFiles)
 	// 通知IM下载文件
 	if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
 		return errors.Wrap(err, "notice IM server download reward file")

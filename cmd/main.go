@@ -20,7 +20,7 @@ func main() {
 	config.Init()
 	db.Init()
 	go service.RunHttp()
-	// go service.SugarTicker()
+	go service.SugarTicker()
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.

@@ -11,11 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"server-sugar-app/config"
+	"server-sugar-app/internal/app/group"
 	"server-sugar-app/internal/pkg/generr"
 )
 
 var (
-	ExpectToken string
+	expectToken string
 
 	calcSugar struct {
 		sync.Mutex
@@ -34,8 +35,8 @@ func ReceiveCalcFile(c *gin.Context) {
 	}
 
 	// 验证临时token
-	if token != ExpectToken {
-		err = errors.Errorf("token: %s, receive token: %s", ExpectToken, token)
+	if token != expectToken {
+		err = errors.Errorf("token: %s, receive token: %s", expectToken, token)
 		log.Errorf("err: %+v", errors.Wrap(err, "wrong 'token'"))
 		c.JSON(http.StatusBadRequest, generr.SugarWrongToken)
 		return
@@ -74,7 +75,7 @@ func ReceiveCalcFile(c *gin.Context) {
 		return
 	}
 	filename := fmt.Sprintf("%s_%s.zip", askFilename, time.Now().Format("20060102150405"))
-	err = c.SaveUploadedFile(fh, FilePath+filename)
+	err = c.SaveUploadedFile(fh, curFilePath+filename)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "save file"))
 		c.JSON(http.StatusBadRequest, generr.SugarSaveFile)
@@ -99,6 +100,38 @@ func ReceiveCalcFile(c *gin.Context) {
 			}
 		}()
 	}
+
+	c.JSON(http.StatusOK, struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+	}{Code: 200, Msg: "success"})
+	return
+}
+
+func ManualStart(c *gin.Context) {
+	req := struct {
+		Filenames   []string `form:"filenames" binding:"required"`
+		CurFilePath string   `form:"cur_file_path" binding:"required"`
+	}{}
+
+	err := c.ShouldBind(&req)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	curFilePath = req.CurFilePath
+
+	go group.GetLatestGroupRela()
+
+	go func() {
+		err = calcReward(req.Filenames)
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
+			return
+		}
+	}()
 
 	c.JSON(http.StatusOK, struct {
 		Code int    `json:"code"`

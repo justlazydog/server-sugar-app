@@ -19,9 +19,9 @@ func writeFile(user map[string]float64, flag int) {
 	var filename string
 
 	if flag == 1 {
-		filename = fmt.Sprintf("%s%s_%s.txt", FilePath, "account_in", time.Now().Format("20060102150405"))
+		filename = fmt.Sprintf("%s%s_%s.txt", curFilePath, "account_in", time.Now().Format("20060102150405"))
 	} else {
-		filename = fmt.Sprintf("%s%s_%s.txt", FilePath, "account_out", time.Now().Format("20060102150405"))
+		filename = fmt.Sprintf("%s%s_%s.txt", curFilePath, "account_out", time.Now().Format("20060102150405"))
 	}
 
 	f, err := os.Create(filename)
@@ -44,9 +44,9 @@ func writeFile(user map[string]float64, flag int) {
 // 写算力文件
 func writeForceFile(user map[string]float64, amount map[string]float64, flag int) (filename string) {
 	if flag == 1 {
-		filename = fmt.Sprintf("%s%s_%s.txt", FilePath, "possess", time.Now().Format("200601021504"))
+		filename = fmt.Sprintf("%s%s_%s.txt", curFilePath, "possess", time.Now().Format("200601021504"))
 	} else {
-		filename = fmt.Sprintf("%s%s_%s.txt", FilePath, "invite", time.Now().Format("200601021504"))
+		filename = fmt.Sprintf("%s%s_%s.txt", curFilePath, "invite", time.Now().Format("200601021504"))
 	}
 
 	f, err := os.Create(filename)
@@ -97,8 +97,8 @@ func writeRewardFile(r1 map[string]float64, r2 map[string]float64) (zipFn []stri
 	}
 
 	t := time.Now().Unix()
-	fn1Path := fmt.Sprintf("%sreward_1_%d.txt", FilePath, t)
-	fn2Path := fmt.Sprintf("%sreward_2_%d.txt", FilePath, t)
+	fn1Path := fmt.Sprintf("%sreward_1_%d.txt", curFilePath, t)
+	fn2Path := fmt.Sprintf("%sreward_2_%d.txt", curFilePath, t)
 	// BOB要求2个奖励文件单独发送。。。
 	zipFn1 := fmt.Sprintf("reward_1_%d.zip", t)
 	zipFn2 := fmt.Sprintf("reward_2_%d.zip", t)
@@ -113,11 +113,11 @@ func writeRewardFile(r1 map[string]float64, r2 map[string]float64) (zipFn []stri
 	}
 	// 压缩失败，传txt文件
 	// 如果fn带路径的话，压缩文件也会有路径
-	if err = util.ZipFiles(FilePath+zipFn1, []string{fn1Path}); err != nil {
+	if err = util.ZipFiles(curFilePath+zipFn1, []string{fn1Path}); err != nil {
 		err = errors.Wrap(err, "zip file")
 		return
 	}
-	if err = util.ZipFiles(FilePath+zipFn2, []string{fn2Path}); err != nil {
+	if err = util.ZipFiles(curFilePath+zipFn2, []string{fn2Path}); err != nil {
 		err = errors.Wrap(err, "zip file")
 		return
 	}

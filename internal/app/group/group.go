@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 const SystemAccount = "a3b640a1-1de0-4fe8-9b57-b3985256efb2"
@@ -21,14 +22,42 @@ var (
 	RelateUpdated bool
 	StopCalc      bool
 	Users         []string
-	UserRelaMap   map[string][]string
-
-	Cond = sync.NewCond(new(sync.Mutex))
+	Cond          = sync.NewCond(new(sync.Mutex))
 )
+
+var userRelaMap map[string][]string
+
+func GetLatestGroupRela() {
+	defer func() {
+		RelateUpdated = true
+		Cond.Broadcast()
+	}()
+
+	t := time.Now()
+	RelateUpdated = false
+	StopCalc = false
+	log.Info("start update relation")
+	err := UpdateGroupRelation()
+	if err != nil {
+		StopCalc = true
+		log.Errorf("err: %+v", errors.WithMessage(err, "update relation"))
+		return
+	}
+	m := make(map[string]bool)
+	users, err := GetAllDownLineUsers(SystemAccount, m)
+	if err != nil {
+		StopCalc = true
+		log.Errorf("err: %+v", errors.WithMessage(err, "get all down line users"))
+		return
+	}
+	users = append(users, SystemAccount)
+	Users = users
+	log.Infof("relation updated, cost time: %v", time.Since(t))
+}
 
 // UpdateGroupRelation 更新最新的IM用户关系
 func UpdateGroupRelation() (err error) {
-	UserRelaMap = make(map[string][]string)
+	userRelaMap = make(map[string][]string)
 	// 从IM获取最新的用户关系
 	param := map[string]interface{}{
 		"code": "secret",
@@ -79,7 +108,7 @@ func UpdateGroupRelation() (err error) {
 			continue
 		}
 
-		UserRelaMap[father] = append(UserRelaMap[father], son)
+		userRelaMap[father] = append(userRelaMap[father], son)
 	}
 	return
 }
@@ -121,6 +150,6 @@ func GetAllDownLineUsers(uid string, cm map[string]bool) (ids []string, err erro
 // GetDownLineUsers 获取当前用户的直接下线
 func GetDownLineUsers(uid string) []string {
 	ids := make([]string, 0)
-	ids = append(ids, UserRelaMap[uid]...)
+	ids = append(ids, userRelaMap[uid]...)
 	return ids
 }

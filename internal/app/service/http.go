@@ -9,6 +9,7 @@ import (
 
 	"server-sugar-app/config"
 	"server-sugar-app/internal/app/shop"
+	"server-sugar-app/internal/app/sugar"
 )
 
 var srv *http.Server
@@ -24,12 +25,15 @@ func RunHttp() {
 	r.GET("/shop/boss/credit/list", shop.ListBossCredit)
 	r.GET("/shop/boss/credit/detail/list", shop.ListBossCreditDetail)
 
-	// r.POST("/sugar/upload/:token/:filename", sugar.ReceiveCalcFile)
+	r.POST("/sugar/upload/:token/:filename", sugar.ReceiveCalcFile)
+	r.POST("/sugar/start/manual", sugar.ManualStart)
 
 	srv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port),
 		Handler: r,
 	}
+
+	log.Infof("Start to listen %s", srv.Addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("listen: %s\n", err)
 	}

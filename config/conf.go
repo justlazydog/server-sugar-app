@@ -44,11 +44,6 @@ type Sugar struct {
 	Request string `yaml:"request"`
 }
 
-type Perf struct {
-	Origin  string `yaml:"origin"`
-	Request string `yaml:"request"`
-}
-
 type sie struct {
 	SIESchedule       string   `yaml:"sie_schedule"`
 	SIERewardAccounts []string `yaml:"sie_reward_accounts"`
@@ -56,7 +51,6 @@ type sie struct {
 	SIEAddAccounts    []string `yaml:"sie_add_accounts"`
 	SIESubAccounts    []string `yaml:"sie_sub_accounts"`
 	Sugars            []Sugar  `yaml:"sugars"`
-	Perfs             []Perf   `yaml:"perfs"`
 }
 
 func Init() {

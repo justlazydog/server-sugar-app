@@ -68,9 +68,12 @@ func ParseCompressAccountFile(filename string) (m map[string]float64, sumBalance
 	return
 }
 
-func PostIMServer(url, body string) (rsp *http.Response, err error) {
+func PostIMServer(url, body string) (data map[string]interface{}, err error) {
 	log.Infof("post [%s]", url)
-	var req *http.Request
+	var (
+		req *http.Request
+		rsp *http.Response
+	)
 	for i := 1; i <= 3; i++ {
 		var nowTime = time.Now().Unix()
 		sign := md5.Sum([]byte(fmt.Sprintf("%s%d%s", body, nowTime, "asdfeaegrgrew&asdfeaegrgrew%asdfeaegrgrew")))
@@ -112,8 +115,9 @@ func PostIMServer(url, body string) (rsp *http.Response, err error) {
 		return
 	}
 	if res.Code != 200 {
-		err = errors.Wrap(fmt.Errorf("post [%s] response code is [%d]", url, rsp.StatusCode), res.Msg)
+		err = errors.Wrap(fmt.Errorf("post [%s] response code is [%d]", url, res.Code), res.Msg)
 	}
+	data = res.Data
 	return
 }
 

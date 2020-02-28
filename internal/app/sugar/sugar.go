@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -126,19 +125,18 @@ func calcReward(files []string) (err error) {
 		return errors.Wrap(err, "get last sugar record")
 	}
 
-	// accInMap, sumBalanceIn, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
-	// if err != nil {
-	// 	return errors.Wrap(err, "get account balance in or out")
-	// }
-	// go writeFile(accInMap, 1)
-	//
-	// accOutMap, sumBalanceOut, err := getAccountsBalanceInOrOut(sie.SIESubAccounts, 2)
-	// if err != nil {
-	// 	return errors.Wrap(err, "get account balance in or out")
-	// }
-	// go writeFile(accOutMap, 2)
-	sumBalanceIn := 132954333.4887400000000000
-	sumBalanceOut := -83870682.3924900000000000
+	accInMap, sumBalanceIn, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
+	if err != nil {
+		return errors.Wrap(err, "get account balance in or out")
+	}
+	go writeFile(accInMap, 1)
+
+	accOutMap, sumBalanceOut, err := getAccountsBalanceInOrOut(sie.SIESubAccounts, 2)
+	if err != nil {
+		return errors.Wrap(err, "get account balance in or out")
+	}
+	go writeFile(accOutMap, 2)
+
 	curCurrency := lastSugar.RealCurrency - (sumBalanceOut - lastSugar.AccountOut) - (shopSIE - lastSugar.ShopSIE) - (sumBalanceIn - lastSugar.AccountIn)
 	curRealCurrency := curCurrency + curSugar
 
@@ -241,27 +239,12 @@ func getAccountsBalanceInOrOut(accounts []string, flag int) (
 		}
 
 		body, _ := json.Marshal(m)
-		rsp, err := util.PostIMServer("https://account.isecret.im/open/wallet/user/GetBillSummary", string(body))
+		data, err := util.PostIMServer("https://account.isecret.im/open/wallet/user/GetBillSummary", string(body))
 		if err != nil {
 			return accountMap, sumBalance, err
 		}
 
-		rspBody, _ := ioutil.ReadAll(rsp.Body)
-		rsp.Body.Close()
-
-		type Result struct {
-			Code int                    `json:"code"`
-			Msg  string                 `json:"msg"`
-			Data map[string]interface{} `json:"data"`
-		}
-
-		var res Result
-		err = json.Unmarshal(rspBody, &res)
-		if err != nil {
-			return accountMap, sumBalance, err
-		}
-
-		if rspMap, ok := res.Data["SIE"].(map[string]interface{}); ok {
+		if rspMap, ok := data["SIE"].(map[string]interface{}); ok {
 			var balance float64
 			if flag == 1 {
 				if _, ok := rspMap["balance_in"].(string); ok {

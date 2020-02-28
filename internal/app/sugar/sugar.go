@@ -126,18 +126,19 @@ func calcReward(files []string) (err error) {
 		return errors.Wrap(err, "get last sugar record")
 	}
 
-	accInMap, sumBalanceIn, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
-	if err != nil {
-		return errors.Wrap(err, "get account balance in or out")
-	}
-	go writeFile(accInMap, 1)
-
-	accOutMap, sumBalanceOut, err := getAccountsBalanceInOrOut(sie.SIESubAccounts, 2)
-	if err != nil {
-		return errors.Wrap(err, "get account balance in or out")
-	}
-	go writeFile(accOutMap, 2)
-
+	// accInMap, sumBalanceIn, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
+	// if err != nil {
+	// 	return errors.Wrap(err, "get account balance in or out")
+	// }
+	// go writeFile(accInMap, 1)
+	//
+	// accOutMap, sumBalanceOut, err := getAccountsBalanceInOrOut(sie.SIESubAccounts, 2)
+	// if err != nil {
+	// 	return errors.Wrap(err, "get account balance in or out")
+	// }
+	// go writeFile(accOutMap, 2)
+	sumBalanceIn := 132954333.4887400000000000
+	sumBalanceOut := -83870682.3924900000000000
 	curCurrency := lastSugar.RealCurrency - (sumBalanceOut - lastSugar.AccountOut) - (shopSIE - lastSugar.ShopSIE) - (sumBalanceIn - lastSugar.AccountIn)
 	curRealCurrency := curCurrency + curSugar
 

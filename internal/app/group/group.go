@@ -156,5 +156,6 @@ func GetDownLineUsers(uid string) []string {
 
 func Flush() {
 	userRelaMap = make(map[string][]string)
+	Users = []string{}
 	return
 }

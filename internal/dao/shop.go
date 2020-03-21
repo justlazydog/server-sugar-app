@@ -170,6 +170,39 @@ func (*boss) GetCredit(bossID string) (offline, online float64, err error) {
 	return
 }
 
+func (*boss) GetAmount(bossID string) (offline, online float64, err error) {
+	rows, err := db.MysqlCli.Query(
+		"select flag,sum(amount) as all_amount from shop_boss where open_id = ? group by flag ", bossID)
+	if err != nil {
+		return
+	}
+
+	type Res struct {
+		Flag      uint8
+		AllAmount float64
+	}
+
+	var res []Res
+	for rows.Next() {
+		var r Res
+		err = rows.Scan(&r.Flag, &r.AllAmount)
+		if err != nil {
+			return
+		}
+		res = append(res, r)
+	}
+
+	for _, v := range res {
+		if v.Flag == 1 {
+			offline = v.AllAmount
+		}
+		if v.Flag == 2 {
+			online = v.AllAmount
+		}
+	}
+	return
+}
+
 func (*boss) GetCreditDetail(bossID string, year int, month, flag uint8, lastID, pageSize int) (users []model.Boss, err error) {
 	var rows *sql.Rows
 	if lastID == 0 {

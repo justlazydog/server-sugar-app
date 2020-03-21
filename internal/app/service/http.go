@@ -20,11 +20,11 @@ func RunHttp() {
 	r.GET("/shop/user/credit", shop.GetUserCredit)
 	r.GET("/shop/user/credit/detail", shop.GetUserCreditDetail)
 	r.GET("/shop/used", shop.GetUsedAmount)
+	r.GET("/shop/boss/amount", shop.GetBossAmount)
 	r.GET("/shop/boss/credit", shop.GetBossCredit)
 	r.GET("/shop/boss/credit/detail", shop.GetBossCreditDetail)
 	r.GET("/shop/boss/credit/list", shop.ListBossCredit)
 	r.GET("/shop/boss/credit/detail/list", shop.ListBossCreditDetail)
-
 	r.POST("/sugar/upload/:token/:filename", sugar.ReceiveCalcFile)
 	r.POST("/sugar/start/manual", sugar.ManualStart)
 	r.GET("/sugar/download/:filename", sugar.DownloadRewardFile)

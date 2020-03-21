@@ -202,6 +202,24 @@ func GetUsedAmount(c *gin.Context) {
 	}{200, "success", m})
 }
 
+func GetBossAllCredit(c *gin.Context) {
+	offline, online, err := dao.User.GetUsedAmount()
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get used amount"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	m := make(map[string]interface{})
+	m["offline"] = offline
+	m["online"] = online
+	c.JSON(http.StatusOK, struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", m})
+}
+
 func GetBossCredit(c *gin.Context) {
 	req := struct {
 		BossID string `form:"boss_id" binding:"required"`
@@ -215,6 +233,36 @@ func GetBossCredit(c *gin.Context) {
 	}
 
 	offline, online, err := dao.Boss.GetCredit(req.BossID)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get credit"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	m := make(map[string]interface{})
+	m["offline"] = offline
+	m["online"] = online
+	c.JSON(http.StatusOK, struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", m})
+	return
+}
+
+func GetBossAmount(c *gin.Context) {
+	req := struct {
+		BossID string `form:"boss_id" binding:"required"`
+	}{}
+
+	err := c.ShouldBind(&req)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	offline, online, err := dao.Boss.GetAmount(req.BossID)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "get credit"))
 		c.JSON(http.StatusInternalServerError, generr.ReadDB)

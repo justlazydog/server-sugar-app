@@ -141,7 +141,7 @@ func writeRewardFileByMap(filename string, m map[string]float64) (err error) {
 	var buf = bufio.NewWriter(file)
 	var line string
 	for k, v := range m {
-		if v > 0 {
+		if v > 0.000000 {
 			line = fmt.Sprintf("%s,%f\n", k, math.Floor(v*Precision)/Precision)
 			_, err = buf.WriteString(line)
 			if err != nil {

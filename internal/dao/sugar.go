@@ -2,6 +2,7 @@ package dao
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"server-sugar-app/internal/db"
@@ -41,5 +42,68 @@ func (*sugar) GetLastRecord() (s model.Sugar, err error) {
 		return
 	}
 	s.CreateTime, err = time.Parse("2006-01-02 15:04:05", createTime)
+	return
+}
+
+type userReward struct {
+}
+
+var UserReward = new(userReward)
+
+func (*userReward) Get() (m map[string]float64, err error) {
+	sqlStr := "select uid,sum(reward_a) from user_reward group	by uid"
+	rows, err := db.MysqlCli.Query(sqlStr)
+	if err != nil {
+		return
+	}
+
+	m = make(map[string]float64)
+	for rows.Next() {
+		var (
+			uid    string
+			reward float64
+		)
+		err = rows.Scan(&uid, &reward)
+		if err != nil && !strings.Contains(err.Error(), "converting") {
+			err = nil
+			return
+		}
+		m[uid] = reward
+	}
+	return
+}
+
+func (*userReward) GetRewardA() (reward float64, err error) {
+	sqlStr := "select sum(reward_a) as reward from user_reward"
+	rows := db.MysqlCli.QueryRow(sqlStr)
+	err = rows.Scan(&reward)
+	if err != nil {
+		if strings.Contains(err.Error(), "converting") {
+			err = nil
+			reward = 0
+			return
+		}
+	}
+	return
+}
+
+func (u *userReward) CreateWithTx(tx *sql.Tx, data []model.UserReward) (err error) {
+	var vals []interface{}
+
+	sqlStr := "insert into user_reward (uid,reward_a) values "
+	for _, row := range data {
+		sqlStr += "(?,?),"
+		vals = append(vals, row.UID, row.RewardA)
+	}
+	// trim the last ,
+	sqlStr = sqlStr[0 : len(sqlStr)-1]
+	// prepare the statement
+	stmt, err := tx.Prepare(sqlStr)
+	if err != nil {
+		return
+	}
+
+	// format all vals at once
+	_, err = stmt.Exec(vals...)
 	return
 }

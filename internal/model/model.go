@@ -49,3 +49,11 @@ type UserSugar struct {
 	UserFrozen       float64 `json:"user_frozen"`        // 用户冻结金额
 	UserCredit       float64 `json:"user_credit"`        // 用户积分
 }
+
+type UserReward struct {
+	UID     string  `json:"uid"`      // 用户ID
+	RewardA float64 `json:"reward_a"` // 用户持币奖励
+	Rsv     float64 `json:"-"`        // 预留字段
+	Rsv1    float64 `json:"-"`        // 预留字段1
+	Rsv2    float64 `json:"-"`        // 预留字段2
+}

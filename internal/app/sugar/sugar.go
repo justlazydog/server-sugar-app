@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -15,6 +16,7 @@ import (
 
 	"server-sugar-app/config"
 	"server-sugar-app/internal/dao"
+	"server-sugar-app/internal/db"
 	"server-sugar-app/internal/model"
 	"server-sugar-app/internal/pkg/util"
 )
@@ -83,10 +85,24 @@ func calcReward(files []string) (err error) {
 	// 用户商城店铺积分文件
 	shopM := mapS[sie.Sugars[2].Origin]
 
+	// creditM-上次持币奖励*10/2
+	rewardA, err := dao.UserReward.Get()
+	if err != nil {
+		return errors.Wrap(err, "get user possess reward")
+	}
+
 	// reward2M 糖果邀请奖励商城积分计算依据
 	reward2M := cloneMap(creditM)
 	for key := range shopM {
 		reward2M[key] += shopM[key]
+	}
+
+	for k, v := range rewardA {
+		creditM[k] = creditM[k] - v*10/2
+		reward2M[k] = reward2M[k] - v*10/2
+		if reward2M[k] < 0 {
+			reward2M[k] = 0
+		}
 	}
 
 	// 获取销毁SIE数量累计值
@@ -95,8 +111,13 @@ func calcReward(files []string) (err error) {
 		return errors.Wrap(err, "get used shop sie amount")
 	}
 
+	sumRewardA, err := dao.UserReward.GetRewardA()
+	if err != nil {
+		return errors.Wrap(err, "get sum possess reward")
+	}
+
 	// 计算应发糖果金额
-	curSugar := shopSIE * 0.01
+	curSugar := (shopSIE - sumRewardA/2) * 0.0048
 
 	// 持币奖励结果保存的map
 	r1 := make(map[string]float64)
@@ -120,11 +141,6 @@ func calcReward(files []string) (err error) {
 		return errors.Wrap(err, "goroutine wait")
 	}
 
-	lastSugar, err := dao.Sugar.GetLastRecord()
-	if err != nil {
-		return errors.Wrap(err, "get last sugar record")
-	}
-
 	accInMap, sumBalanceIn, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
 	if err != nil {
 		return errors.Wrap(err, "get account balance in or out")
@@ -136,6 +152,11 @@ func calcReward(files []string) (err error) {
 		return errors.Wrap(err, "get account balance in or out")
 	}
 	go writeFile(accOutMap, 2)
+
+	lastSugar, err := dao.Sugar.GetLastRecord()
+	if err != nil {
+		return errors.Wrap(err, "get last sugar record")
+	}
 
 	curCurrency := lastSugar.RealCurrency - (sumBalanceOut - lastSugar.AccountOut) - (shopSIE - lastSugar.ShopSIE) - (sumBalanceIn - lastSugar.AccountIn)
 	curRealCurrency := curCurrency + curSugar
@@ -154,6 +175,39 @@ func calcReward(files []string) (err error) {
 		return errors.Wrap(err, "add sugar record")
 	}
 
+	// save(持币奖励)
+	log.Info("start save user_reward")
+	t := time.Now()
+	ur := make([]model.UserReward, 0)
+	tx, err := db.MysqlCli.Begin()
+	if err != nil {
+		return errors.Wrap(err, "tx begin")
+	}
+
+	index := 0
+	for user, amount := range r1 {
+		if amount > 0.000000 {
+			u := model.UserReward{
+				UID:     user,
+				RewardA: math.Floor(amount*Precision) / Precision,
+			}
+			ur = append(ur, u)
+		}
+
+		// 批量插入
+		if index == len(r1)-1 || len(ur) > 499 {
+			err = dao.UserReward.CreateWithTx(tx, ur)
+			if err != nil {
+				tx.Rollback()
+				return errors.Wrap(err, "user reward insert")
+			}
+			ur = make([]model.UserReward, 0)
+		}
+		index++
+	}
+	tx.Commit()
+	log.Infof("over save user_reward, cost time: %v", time.Since(t))
+
 	// 生成奖励数据文件
 	rewardFiles, err := writeRewardFile(r1, r2)
 	if err != nil {
@@ -165,47 +219,6 @@ func calcReward(files []string) (err error) {
 	if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
 		return errors.Wrap(err, "notice IM server download reward file")
 	}
-
-	// todo
-	// 当前糖果计算各用户信息更新进数据库
-	// go func() {
-	// 	ua := make([]UserSugar, 0)
-	// 	tx, err := db.GetMysql().Begin()
-	// 	defer tx.Commit()
-	// 	if err != nil {
-	// 		return
-	// 	}
-	//
-	// 	index := 1
-	// 	for _, key := range Users {
-	// 		u := UserSugar{
-	// 			UID:              key,
-	// 			UserSugarAmount:  r1[key] + r2[key],
-	// 			UserPossessForce: r1f[key],
-	// 			UserInviteForce:  r2f[key],
-	// 			UserAmount:       propertyM[key],
-	// 			// UserFrozen:       frozenM[key],
-	// 			UserCredit: creditM[key],
-	// 		}
-	//
-	// 		// 过滤皆为0的数据
-	// 		tmp := UserSugar{UID: key}
-	// 		if !(u == tmp) {
-	// 			ua = append(ua, u)
-	// 		}
-	//
-	// 		// 批量插入
-	// 		if index == len(Users) || len(ua) > 499 {
-	// 			tmp := UserSugar{}
-	// 			if err = tmp.CreateWithTx(tx, ua); err != nil {
-	// 				tx.Rollback()
-	// 				return
-	// 			}
-	// 			ua = make([]UserSugar, 0)
-	// 		}
-	// 		index++
-	// 	}
-	// }()
 	return
 }
 

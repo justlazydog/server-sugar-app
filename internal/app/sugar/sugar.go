@@ -44,7 +44,7 @@ func StartSugar() {
 	for _, v := range sieCfg.Sugars {
 		// callBackUrl := config.Server.DomainName + "/sugar/upload/" + ExpectToken + "/" + v.Origin
 		callBackUrl := fmt.Sprintf("%s/sugar/upload/%s/%s", config.Server.DomainName, expectToken, v.Origin)
-		t, _ := time.Parse("2006-01-02 15:04:05", time.Now().Format("2006-01-02")+" 16:00:00")
+		t, _ := time.Parse("2006-01-02 15:04:05", time.Now().Format("2006-01-02")+" 13:00:00")
 		postBody := fmt.Sprintf(`{"callback":"%s","timestamp":%d}`, callBackUrl, t.Unix())
 		_, err = util.PostIMServer(v.Request, postBody)
 		if err != nil {

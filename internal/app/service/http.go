@@ -18,6 +18,7 @@ func RunHttp() {
 	r := gin.Default()
 	r.PUT("/shop/order", shop.Put)
 	r.GET("/shop/user/credit", shop.GetUserCredit)
+	r.GET("/shop/user/credit/all", shop.GetAllUserCredit)
 	r.GET("/shop/user/credit/detail", shop.GetUserCreditDetail)
 	r.GET("/shop/used", shop.GetUsedAmount)
 	r.GET("/shop/boss/amount", shop.GetBossAmount)

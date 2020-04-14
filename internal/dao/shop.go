@@ -52,6 +52,39 @@ func (*user) GetCredit(userID string) (offline, online float64, err error) {
 	return
 }
 
+func (*user) GetAllCredit() (offline, online float64, err error) {
+	rows, err := db.MysqlCli.Query(
+		"select flag,sum(credit) as all_credit from shop_user group by flag ")
+	if err != nil {
+		return
+	}
+
+	type Res struct {
+		Flag      uint8
+		AllCredit float64
+	}
+
+	var res []Res
+	for rows.Next() {
+		var r Res
+		err = rows.Scan(&r.Flag, &r.AllCredit)
+		if err != nil {
+			return
+		}
+		res = append(res, r)
+	}
+
+	for _, v := range res {
+		if v.Flag == 1 {
+			offline = v.AllCredit
+		}
+		if v.Flag == 2 {
+			online = v.AllCredit
+		}
+	}
+	return
+}
+
 func (*user) GetCreditDetail(userID string, year int, month, flag uint8, lastID, pageSize int) (users []model.User, err error) {
 	var rows *sql.Rows
 	if lastID == 0 {

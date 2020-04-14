@@ -138,6 +138,25 @@ func GetUserCredit(c *gin.Context) {
 	return
 }
 
+func GetAllUserCredit(c *gin.Context) {
+	offline, online, err := dao.User.GetAllCredit()
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get credit"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	m := make(map[string]interface{})
+	m["offline"] = offline
+	m["online"] = online
+	c.JSON(http.StatusOK, struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", m})
+	return
+}
+
 func GetUserCreditDetail(c *gin.Context) {
 	req := struct {
 		UserID   string `form:"user_id" binding:"required"`

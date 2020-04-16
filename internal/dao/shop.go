@@ -295,7 +295,7 @@ func (*boss) ListOnlineCredit(openID string, pageNum, pageSize int) (rsp []model
 	var sqlStr string
 	if openID != "" {
 		sqlStr = fmt.Sprintf("select open_id, sum(credit) as all_credit, count(*) as num "+
-			"from shop_boss where flag = 2 and open_id = %s group by open_id limit %d,%d",
+			"from shop_boss where flag = 2 and open_id = '%s' group by open_id limit %d,%d",
 			openID, pageSize*(pageNum-1), pageSize)
 	} else {
 		sqlStr = fmt.Sprintf("select open_id, sum(credit) as all_credit, count(*) as num "+

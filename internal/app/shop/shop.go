@@ -343,8 +343,9 @@ func GetBossCreditDetail(c *gin.Context) {
 
 func ListBossCredit(c *gin.Context) {
 	req := struct {
-		PageNum  int `form:"page_num"`
-		PageSize int `form:"page_size"`
+		BossID   string `form:"boss_id"`
+		PageNum  int    `form:"page_num"`
+		PageSize int    `form:"page_size"`
 	}{}
 
 	err := c.ShouldBind(&req)
@@ -362,36 +363,62 @@ func ListBossCredit(c *gin.Context) {
 		req.PageNum = 1
 	}
 
-	allCredit, err := dao.Boss.GetAllCredit()
-	if err != nil {
-		log.Errorf("err: %+v", errors.Wrap(err, "get boss all credit"))
-		c.JSON(http.StatusInternalServerError, generr.ReadDB)
-		return
-	}
+	if req.BossID != "" {
+		_, online, err := dao.Boss.GetCredit(req.BossID)
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "get boss all credit"))
+			c.JSON(http.StatusInternalServerError, generr.ReadDB)
+			return
+		}
 
-	num, err := dao.Boss.GetBossNum()
-	if err != nil {
-		log.Errorf("err: %+v", errors.Wrap(err, "get boss num"))
-		c.JSON(http.StatusInternalServerError, generr.ReadDB)
-		return
-	}
+		rsp, err := dao.Boss.ListOnlineCredit(req.BossID, req.PageNum, req.PageSize)
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "list boss credit"))
+			c.JSON(http.StatusInternalServerError, generr.ReadDB)
+			return
+		}
 
-	rsp, err := dao.Boss.ListCredit(req.PageNum, req.PageSize)
-	if err != nil {
-		log.Errorf("err: %+v", errors.Wrap(err, "list boss credit"))
-		c.JSON(http.StatusInternalServerError, generr.ReadDB)
-		return
-	}
+		c.JSON(http.StatusOK, struct {
+			Code int         `json:"code"`
+			Msg  string      `json:"msg"`
+			Data interface{} `json:"data"`
+		}{200, "success", struct {
+			AllCredit float64                   `json:"all_credit"`
+			Num       int                       `json:"num"`
+			List      []model.ListBossCreditRsp `json:"list"`
+		}{AllCredit: online, Num: 1, List: rsp}})
+	} else {
+		allCredit, err := dao.Boss.GetAllOnlineCredit()
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "get boss all credit"))
+			c.JSON(http.StatusInternalServerError, generr.ReadDB)
+			return
+		}
 
-	c.JSON(http.StatusOK, struct {
-		Code int         `json:"code"`
-		Msg  string      `json:"msg"`
-		Data interface{} `json:"data"`
-	}{200, "success", struct {
-		AllCredit float64                   `json:"all_credit"`
-		Num       int                       `json:"num"`
-		List      []model.ListBossCreditRsp `json:"list"`
-	}{AllCredit: allCredit, Num: num, List: rsp}})
+		num, err := dao.Boss.GetBossNum()
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "get boss num"))
+			c.JSON(http.StatusInternalServerError, generr.ReadDB)
+			return
+		}
+
+		rsp, err := dao.Boss.ListOnlineCredit(req.BossID, req.PageNum, req.PageSize)
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "list boss credit"))
+			c.JSON(http.StatusInternalServerError, generr.ReadDB)
+			return
+		}
+
+		c.JSON(http.StatusOK, struct {
+			Code int         `json:"code"`
+			Msg  string      `json:"msg"`
+			Data interface{} `json:"data"`
+		}{200, "success", struct {
+			AllCredit float64                   `json:"all_credit"`
+			Num       int                       `json:"num"`
+			List      []model.ListBossCreditRsp `json:"list"`
+		}{AllCredit: allCredit, Num: num, List: rsp}})
+	}
 	return
 }
 

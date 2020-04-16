@@ -2,6 +2,7 @@ package dao
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"server-sugar-app/internal/db"
@@ -278,7 +279,7 @@ func (*boss) GetCreditDetailNum(bossID string, year int, month, flag uint8) (num
 	return
 }
 
-func (*boss) GetAllCredit() (credit float64, err error) {
+func (*boss) GetAllOnlineCredit() (credit float64, err error) {
 	row := db.MysqlCli.QueryRow("select sum(credit) from shop_boss where flag = 2")
 	err = row.Scan(&credit)
 	return
@@ -290,9 +291,17 @@ func (*boss) GetBossNum() (num int, err error) {
 	return
 }
 
-func (*boss) ListCredit(pageNum, pageSize int) (rsp []model.ListBossCreditRsp, err error) {
-	rows, err := db.MysqlCli.Query("select open_id, sum(credit) as all_credit, count(*) as num "+
-		"from shop_boss where flag = 2 group by open_id limit ?,?", pageSize*(pageNum-1), pageSize)
+func (*boss) ListOnlineCredit(openID string, pageNum, pageSize int) (rsp []model.ListBossCreditRsp, err error) {
+	var sqlStr string
+	if openID != "" {
+		sqlStr = fmt.Sprintf("select open_id, sum(credit) as all_credit, count(*) as num "+
+			"from shop_boss where flag = 2 and open_id = %s group by open_id limit %d,%d",
+			openID, pageSize*(pageNum-1), pageSize)
+	} else {
+		sqlStr = fmt.Sprintf("select open_id, sum(credit) as all_credit, count(*) as num "+
+			"from shop_boss where flag = 2 group by open_id limit %d,%d", pageSize*(pageNum-1), pageSize)
+	}
+	rows, err := db.MysqlCli.Query(sqlStr)
 	if err != nil {
 		return
 	}

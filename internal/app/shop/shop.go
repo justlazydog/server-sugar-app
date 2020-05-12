@@ -35,6 +35,8 @@ func Put(c *gin.Context) {
 		return
 	}
 
+	log.Infof("req: %+v", req)
+
 	amount, err := strconv.ParseFloat(req.Amount, 64)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "convert string to float"))

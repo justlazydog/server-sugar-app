@@ -26,6 +26,7 @@ type server struct {
 	Host       string `yaml:"host"`
 	Port       string `yaml:"port"`
 	DomainName string `yaml:"domain_name"`
+	OpenCloud  string `yaml:"open_cloud"`
 }
 
 type mysql struct {

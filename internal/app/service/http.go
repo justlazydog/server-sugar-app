@@ -8,27 +8,36 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"server-sugar-app/config"
+	"server-sugar-app/internal/app/out"
 	"server-sugar-app/internal/app/shop"
 	"server-sugar-app/internal/app/sugar"
+	"server-sugar-app/internal/pkg/middleware"
 )
 
 var srv *http.Server
 
 func RunHttp() {
 	r := gin.Default()
-	r.PUT("/shop/order", shop.Put)
-	r.GET("/shop/user/credit", shop.GetUserCredit)
-	r.GET("/shop/user/credit/all", shop.GetAllUserCredit)
-	r.GET("/shop/user/credit/detail", shop.GetUserCreditDetail)
-	r.GET("/shop/used", shop.GetUsedAmount)
-	r.GET("/shop/boss/amount", shop.GetBossAmount)
-	r.GET("/shop/boss/credit", shop.GetBossCredit)
-	r.GET("/shop/boss/credit/detail", shop.GetBossCreditDetail)
-	r.GET("/shop/boss/credit/list", shop.ListBossCredit)
-	r.GET("/shop/boss/credit/detail/list", shop.ListBossCreditDetail)
-	r.POST("/sugar/upload/:token/:filename", sugar.ReceiveCalcFile)
-	r.POST("/sugar/start/manual", sugar.ManualStart)
-	r.GET("/sugar/download/:filename", sugar.DownloadRewardFile)
+	shopGroup := r.Group("/shop")
+	shopGroup.PUT("/order", shop.Put)
+	shopGroup.GET("/user/credit", shop.GetUserCredit)
+	shopGroup.GET("/user/credit/all", shop.GetAllUserCredit)
+	shopGroup.GET("/user/credit/detail", shop.GetUserCreditDetail)
+	shopGroup.GET("/used", shop.GetUsedAmount)
+	shopGroup.GET("/boss/amount", shop.GetBossAmount)
+	shopGroup.GET("/boss/credit", shop.GetBossCredit)
+	shopGroup.GET("/boss/credit/detail", shop.GetBossCreditDetail)
+	shopGroup.GET("/boss/credit/list", shop.ListBossCredit)
+	shopGroup.GET("/boss/credit/detail/list", shop.ListBossCreditDetail)
+
+	sugarGroup := r.Group("/sugar")
+	sugarGroup.POST("/upload/:token/:filename", sugar.ReceiveCalcFile)
+	sugarGroup.POST("/start/manual", sugar.ManualStart)
+	sugarGroup.GET("/download/:filename", sugar.DownloadRewardFile)
+
+	outGroup := r.Group("/out")
+	outGroup.Use(middleware.ValidateSign)
+	outGroup.PUT("/order", out.Put)
 
 	srv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port),

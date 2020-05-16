@@ -12,6 +12,8 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -68,6 +70,7 @@ func ParseCompressAccountFile(filename string) (m map[string]float64, sumBalance
 	return
 }
 
+// IM服务
 func PostIMServer(url, body string) (data map[string]interface{}, err error) {
 	log.Infof("post [%s]", url)
 	var (
@@ -146,4 +149,39 @@ func RandString(n int) string {
 		remain--
 	}
 	return string(b)
+}
+
+// ToString()
+func ToString(v interface{}) string {
+	var str string
+	switch v.(type) {
+	case int:
+		str = strconv.Itoa(v.(int))
+	case int64:
+		str = strconv.FormatInt(v.(int64), 10)
+	case string:
+		str, _ = v.(string)
+	case float64:
+		str = fmt.Sprintf("%f", v.(float64))
+	default:
+		str = ""
+	}
+	return str
+}
+
+func GenSignCode(form url.Values, key string) (signCode string) {
+	s := make([]string, 0)
+	for k := range form {
+		s = append(s, k)
+	}
+	sort.Strings(s)
+
+	str := ""
+	for _, v := range s {
+		str += ToString(form[v])
+	}
+
+	str += key
+	signCode = fmt.Sprintf("%x", md5.Sum([]byte(str)))
+	return
 }

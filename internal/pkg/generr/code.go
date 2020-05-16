@@ -6,12 +6,19 @@ type mErr struct {
 }
 
 var (
-	ParseParam = &mErr{601, "参数错误"}
-	ReadDB     = &mErr{602, "读数据库错误"}
-	UpdateDB   = &mErr{603, "更新数据库错误"}
+	ParseParam  = &mErr{400, "参数错误"}
+	ServerError = &mErr{500, "服务错误"}
 )
 
 var (
+	SignMiss     = &mErr{601, "s参数缺失"}
+	SignNotMatch = &mErr{601, "s不匹配"}
+	TimestampErr = &mErr{602, "t参数错误"}
+	TimestampOut = &mErr{602, "t超时"}
+
+	ReadDB   = &mErr{602, "读数据库错误"}
+	UpdateDB = &mErr{603, "更新数据库错误"}
+
 	SugarNoTargetUser = &mErr{701, "无目标用户信息"}
 	SugarNoToken      = &mErr{701, "token缺失"}
 	SugarWrongToken   = &mErr{702, "token不匹配"}

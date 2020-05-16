@@ -15,9 +15,8 @@ var (
 	SignNotMatch = &mErr{602, "s不匹配"}
 	TimestampErr = &mErr{603, "t参数错误"}
 	TimestampOut = &mErr{604, "t超时"}
-
-	ReadDB   = &mErr{602, "读数据库错误"}
-	UpdateDB = &mErr{603, "更新数据库错误"}
+	ReadDB       = &mErr{698, "读数据库错误"}
+	UpdateDB     = &mErr{699, "更新数据库错误"}
 
 	SugarNoTargetUser = &mErr{701, "无目标用户信息"}
 	SugarNoToken      = &mErr{701, "token缺失"}

@@ -12,9 +12,9 @@ var (
 
 var (
 	SignMiss     = &mErr{601, "s参数缺失"}
-	SignNotMatch = &mErr{601, "s不匹配"}
-	TimestampErr = &mErr{602, "t参数错误"}
-	TimestampOut = &mErr{602, "t超时"}
+	SignNotMatch = &mErr{602, "s不匹配"}
+	TimestampErr = &mErr{603, "t参数错误"}
+	TimestampOut = &mErr{604, "t超时"}
 
 	ReadDB   = &mErr{602, "读数据库错误"}
 	UpdateDB = &mErr{603, "更新数据库错误"}

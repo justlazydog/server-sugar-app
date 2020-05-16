@@ -61,7 +61,7 @@ func Put(c *gin.Context) {
 		return
 	}
 
-	userUID, err := dao.Oauth.GetUID(req.OpenID)
+	userUID, err := dao.Oauth.GetUIDByAppID(req.OpenID, req.AppID)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "get uid from open-cloud"))
 		c.JSON(http.StatusInternalServerError, generr.ServerError)

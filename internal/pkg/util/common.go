@@ -172,6 +172,9 @@ func ToString(v interface{}) string {
 func GenSignCode(form url.Values, key string) (signCode string) {
 	s := make([]string, 0)
 	for k := range form {
+		if k == "s" {
+			continue
+		}
 		s = append(s, k)
 	}
 	sort.Strings(s)

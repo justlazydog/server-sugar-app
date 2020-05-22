@@ -134,7 +134,7 @@ func deductDestructAmount(appID, openID, orderID, merchantUUID, token, remark st
 
 	type result struct {
 		Code int    `json:"code"`
-		Msg  string `json:"msg"`
+		Msg  string `json:"message"`
 	}
 
 	var res result

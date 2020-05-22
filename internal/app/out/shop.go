@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"server-sugar-app/config"
 	"server-sugar-app/internal/dao"
 	"server-sugar-app/internal/model"
 	"server-sugar-app/internal/pkg/generr"
@@ -118,7 +119,7 @@ func deductDestructAmount(appID, openID, orderID, merchantUUID, token, remark st
 	form.Set("t", util.ToString(time.Now().Unix()))
 	form.Set("s", util.GenSignCode(form, key))
 
-	req, err := http.NewRequest(http.MethodPost, PayUrl, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, config.Server.OpenCloud+PayUrl, strings.NewReader(form.Encode()))
 	if err != nil {
 		return
 	}

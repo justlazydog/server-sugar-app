@@ -3,6 +3,7 @@ package out
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -24,7 +25,7 @@ const (
 	ExtraMultiple = 1
 	UserMultiple  = 10
 
-	SIE = "sie"
+	SIE = "SIE"
 
 	PayUrl = "/payment/create"
 
@@ -51,11 +52,14 @@ func Put(c *gin.Context) {
 
 	log.Infof("req: %+v", req)
 
-	if strings.ToLower(req.Token) != SIE {
-		req.Amount = req.Amount * req.Rate
+	var amount string
+	if strings.ToUpper(req.Token) != SIE {
+		amount = fmt.Sprintf("%.5f", math.Ceil(req.Amount*req.Rate*100000)/100000)
+	} else {
+		amount = fmt.Sprintf("%.5f", math.Ceil(req.Amount*100000)/100000)
 	}
 
-	err = deductDestructAmount(req.AppID, req.OpenID, req.OrderID, req.MerchantUUID, req.Token, Remark, req.Amount)
+	err = deductDestructAmount(req.AppID, req.OpenID, req.OrderID, req.MerchantUUID, req.Token, Remark, amount)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "deduct destruct"))
 		c.JSON(http.StatusInternalServerError, generr.ServerError)
@@ -101,7 +105,7 @@ func Put(c *gin.Context) {
 	return
 }
 
-func deductDestructAmount(appID, openID, orderID, merchantUUID, token, remark string, value float64) (err error) {
+func deductDestructAmount(appID, openID, orderID, merchantUUID, token, remark, value string) (err error) {
 	key, err := dao.App.GetKey(appID)
 	if err != nil {
 		return
@@ -115,7 +119,7 @@ func deductDestructAmount(appID, openID, orderID, merchantUUID, token, remark st
 	form.Set("token", token)
 	form.Set("remark", remark)
 	form.Set("pay_type", "22")
-	form.Set("amount", fmt.Sprintf("%f", value))
+	form.Set("amount", value)
 	form.Set("t", util.ToString(time.Now().Unix()))
 	form.Set("s", util.GenSignCode(form, key))
 

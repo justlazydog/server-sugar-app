@@ -50,7 +50,7 @@ func Put(c *gin.Context) {
 
 	log.Infof("req: %+v", req)
 
-	if req.Token != SIE {
+	if strings.ToLower(req.Token) != SIE {
 		req.Amount = req.Amount * req.Rate
 	}
 

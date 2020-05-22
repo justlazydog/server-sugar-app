@@ -18,7 +18,7 @@ import (
 	"server-sugar-app/internal/pkg/util"
 )
 
-const timeout = 10
+const timeout = 60
 
 type MultipleReader interface {
 	Reader() io.ReadCloser

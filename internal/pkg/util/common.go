@@ -178,7 +178,7 @@ func GenSignCode(form url.Values, key string) (signCode string) {
 
 	str := ""
 	for _, v := range s {
-		str += ToString(form[v])
+		str += ToString(form[v][0])
 	}
 
 	str += key

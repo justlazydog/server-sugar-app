@@ -23,7 +23,7 @@ const (
 	ExtraMultiple = 1
 	UserMultiple  = 10
 
-	SIE = "SIE"
+	SIE = "sie"
 
 	PayUrl = "/payment/create"
 

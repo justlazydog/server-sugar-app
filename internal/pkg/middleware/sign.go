@@ -118,6 +118,7 @@ func ValidateSign(c *gin.Context) {
 	}
 
 	if signStr != signCode {
+		log.Infof("sign not match, signStr: %s, signCode:%s", signStr, signCode)
 		c.JSON(http.StatusBadRequest, generr.SignNotMatch)
 		c.Abort()
 		return

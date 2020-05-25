@@ -66,20 +66,20 @@ func Put(c *gin.Context) {
 		return
 	}
 
-	userUID, err := dao.Oauth.GetUIDByAppID(req.OpenID, req.AppID)
-	if err != nil {
-		log.Errorf("err: %+v", errors.Wrap(err, "get uid from open-cloud"))
-		c.JSON(http.StatusInternalServerError, generr.ServerError)
-		return
-	}
-	if userUID == "" {
-		log.Errorf("err: %+v", errors.Errorf("user_id: %s query no uid", userUID))
-		c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
-		return
-	}
+	//userUID, err := dao.Oauth.GetUIDByAppID(req.OpenID, req.AppID)
+	//if err != nil {
+	//	log.Errorf("err: %+v", errors.Wrap(err, "get uid from open-cloud"))
+	//	c.JSON(http.StatusInternalServerError, generr.ServerError)
+	//	return
+	//}
+	//if userUID == "" {
+	//	log.Errorf("err: %+v", errors.Errorf("user_id: %s query no uid", userUID))
+	//	c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
+	//	return
+	//}
 
 	user := model.User{
-		UID:           userUID,
+		UID:           req.OpenID,
 		OpenID:        req.OpenID,
 		OrderID:       req.OrderID,
 		Amount:        req.Amount,

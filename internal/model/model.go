@@ -5,6 +5,7 @@ import "time"
 // 用户信息表结构
 type User struct {
 	ID            int     `json:"id"`             // 数据ID
+	AppID         string  `json:"app_id"`         // 应用ID
 	UID           string  `json:"-"`              // 用户uid
 	OpenID        string  `json:"open_id"`        // 用户Open_id
 	OrderID       string  `json:"order_id"`       // 挂单ID

@@ -26,4 +26,7 @@ var (
 	SugarRepeatFile   = &mErr{705, "文件重复"}
 	SugarFormFile     = &mErr{706, "获取文件错误"}
 	SugarSaveFile     = &mErr{707, "存储文件错误"}
+
+	DestructAmountError = &mErr{801, "销毁金额服务错误"}
+	CnyToSieErr         = &mErr{802, "CNY转换SIE错误"}
 )

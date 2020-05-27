@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"server-sugar-app/config"
 	"server-sugar-app/internal/dao"
 	"server-sugar-app/internal/model"
 	"server-sugar-app/internal/pkg/generr"
@@ -68,7 +69,15 @@ func Put(c *gin.Context) {
 		return
 	}
 
+	var appID string
+	if config.Server.Env == "test" {
+		appID = "04565e551f7ff066"
+	} else {
+		appID = "576ae8b341e42274"
+	}
+
 	user := model.User{
+		AppID:         appID,
 		UID:           userUID,
 		OpenID:        req.UserID,
 		OrderID:       req.OrderID,

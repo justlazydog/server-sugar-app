@@ -11,7 +11,6 @@ import (
 	"server-sugar-app/internal/app/out"
 	"server-sugar-app/internal/app/shop"
 	"server-sugar-app/internal/app/sugar"
-	"server-sugar-app/internal/pkg/middleware"
 )
 
 var srv *http.Server
@@ -36,7 +35,7 @@ func RunHttp() {
 	sugarGroup.GET("/download/:filename", sugar.DownloadRewardFile)
 
 	outGroup := r.Group("/out")
-	outGroup.Use(middleware.ValidateSign)
+	//outGroup.Use(middleware.ValidateSign)
 	outGroup.PUT("/order", out.Put)
 
 	srv = &http.Server{

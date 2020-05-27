@@ -185,7 +185,8 @@ func GenSignCode(form url.Values, key string) (signCode string) {
 	}
 
 	str += key
-	log.Infof("str gen sign: %s", str)
+	//log.Infof("str gen sign: %s", str)
+	//fmt.Println(str)
 	signCode = fmt.Sprintf("%x", md5.Sum([]byte(str)))
 	return
 }

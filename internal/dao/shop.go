@@ -14,8 +14,8 @@ type user struct {
 var User = new(user)
 
 func (*user) Add(user model.User) (err error) {
-	_, err = db.MysqlCli.Exec("insert into shop_user (uid,open_id,order_id,amount,credit,multiple,extra_multiple,flag) values (?,?,?,?,?,?,?,?)",
-		user.UID, user.OpenID, user.OrderID, user.Amount, user.Credit, user.Multiple, user.ExtraMultiple, user.Flag)
+	_, err = db.MysqlCli.Exec("insert into shop_user (app_id,uid,open_id,order_id,amount,credit,multiple,extra_multiple,flag) values (?,?,?,?,?,?,?,?,?)",
+		user.AppID, user.UID, user.OpenID, user.OrderID, user.Amount, user.Credit, user.Multiple, user.ExtraMultiple, user.Flag)
 	return
 }
 

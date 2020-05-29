@@ -19,6 +19,7 @@ type User struct {
 
 type Boss struct {
 	ID            int     `json:"id"`             // 数据ID
+	AppID         string  `json:"app_id"`         // 应用ID
 	UID           string  `json:"-"`              // 店主uid
 	OpenID        string  `json:"open_id"`        // 店主Open_id
 	OrderID       string  `json:"order_id"`       // 挂单ID

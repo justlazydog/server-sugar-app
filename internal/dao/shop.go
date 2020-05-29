@@ -165,8 +165,8 @@ type boss struct {
 var Boss = new(boss)
 
 func (*boss) Add(boss model.Boss) (err error) {
-	_, err = db.MysqlCli.Exec("insert into shop_boss (uid,open_id,order_id,amount,credit,multiple,extra_multiple,flag) values (?,?,?,?,?,?,?,?)",
-		boss.UID, boss.OpenID, boss.OrderID, boss.Amount, boss.Credit, boss.Multiple, boss.ExtraMultiple, boss.Flag)
+	_, err = db.MysqlCli.Exec("insert into shop_boss (app_id,uid,open_id,order_id,amount,credit,multiple,extra_multiple,flag) values (?,?,?,?,?,?,?,?,?)",
+		boss.AppID, boss.UID, boss.OpenID, boss.OrderID, boss.Amount, boss.Credit, boss.Multiple, boss.ExtraMultiple, boss.Flag)
 	return
 }
 

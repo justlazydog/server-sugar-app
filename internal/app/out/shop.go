@@ -24,6 +24,7 @@ import (
 
 const (
 	ExtraMultiple = 1
+	BossMultiple  = 2
 	UserMultiple  = 10
 
 	SIE = "SIE"
@@ -69,7 +70,7 @@ func Put(c *gin.Context) {
 		amount = fmt.Sprintf("%.5f", math.Ceil(req.Amount*req.Rate*100000)/100000)
 	}
 
-	err = deductDestructAmount(req.AppID, req.OpenID, req.OrderID, req.MerchantUUID, SIE, Remark, amount)
+	err = deductDestructAmount(req.AppID, config.Server.MerchantUUID, req.OrderID, req.MerchantUUID, SIE, Remark, amount)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "deduct destruct"))
 		c.JSON(http.StatusInternalServerError, generr.DestructAmountError)
@@ -107,6 +108,24 @@ func Put(c *gin.Context) {
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "add user record"))
 		c.JSON(http.StatusBadRequest, generr.ServerError)
+		return
+	}
+
+	boss := model.Boss{
+		AppID:         req.AppID,
+		UID:           req.MerchantUUID,
+		OpenID:        req.MerchantUUID,
+		OrderID:       req.OrderID,
+		Amount:        req.Amount,
+		Credit:        req.Amount * BossMultiple * ExtraMultiple,
+		Multiple:      BossMultiple,
+		ExtraMultiple: ExtraMultiple,
+		Flag:          1,
+	}
+	err = dao.Boss.Add(boss)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "add shop record"))
+		c.JSON(http.StatusBadRequest, generr.UpdateDB)
 		return
 	}
 

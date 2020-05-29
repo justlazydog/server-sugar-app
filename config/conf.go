@@ -22,12 +22,13 @@ var (
 
 // Server 配置
 type server struct {
-	Env        string `yaml:"env"`
-	Host       string `yaml:"host"`
-	Port       string `yaml:"port"`
-	DomainName string `yaml:"domain_name"`
-	OpenCloud  string `yaml:"open_cloud"`
-	OTCHost    string `yaml:"otc_host"`
+	Env          string `yaml:"env"`
+	Host         string `yaml:"host"`
+	Port         string `yaml:"port"`
+	DomainName   string `yaml:"domain_name"`
+	OpenCloud    string `yaml:"open_cloud"`
+	OTCHost      string `yaml:"otc_host"`
+	MerchantUUID string `yaml:"merchant_uuid"`
 }
 
 type mysql struct {

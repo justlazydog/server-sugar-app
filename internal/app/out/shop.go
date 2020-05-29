@@ -154,6 +154,7 @@ func deductDestructAmount(appID, openID, orderID, merchantUUID, token, remark, v
 	form.Set("remark", remark)
 	form.Set("pay_type", "22")
 	form.Set("amount", value)
+	form.Set("flag", "1")
 	form.Set("t", util.ToString(time.Now().Unix()))
 	form.Set("s", util.GenSignCode(form, key))
 

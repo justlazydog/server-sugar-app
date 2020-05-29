@@ -200,7 +200,7 @@ func cnyToSie(cnyVolume float64) (sieVolume float64, err error) {
 	}
 
 	susd := fmt.Sprintf("%s?group_market_id=%s&market_id=%s",
-		config.Server.OpenCloud+getLatestPriceUrl, groupID, "SUSD/CNY")
+		config.Server.OTCHost+getLatestPriceUrl, groupID, "SUSD/CNY")
 	req, _ := http.NewRequest("GET", susd, nil)
 	req.Header.Set("otc-session-id", "isecret")
 	client := http.Client{Timeout: 10 * time.Second}
@@ -237,7 +237,7 @@ func cnyToSie(cnyVolume float64) (sieVolume float64, err error) {
 	susdVolume := cnyVolume / susdPrice
 
 	sie := fmt.Sprintf("%s?market=%s",
-		config.Server.OpenCloud+getMarketInfo, "siesusd")
+		config.Server.OTCHost+getMarketInfo, "siesusd")
 	req, _ = http.NewRequest("GET", sie, nil)
 	req.Header.Set("otc-session-id", "isecret")
 	rsp, err = client.Do(req)

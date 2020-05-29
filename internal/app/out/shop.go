@@ -27,8 +27,9 @@ const (
 	BossMultiple  = 2
 	UserMultiple  = 10
 
-	SIE = "SIE"
-	CNY = "CNY"
+	SIE  = "SIE"
+	SUSD = "SUSD"
+	CNY  = "CNY"
 
 	PayUrl            = "/payment/create"
 	getLatestPriceUrl = "/api/getLatestPrice"
@@ -63,6 +64,14 @@ func Put(c *gin.Context) {
 		if err != nil {
 			log.Errorf("err: %+v", errors.Wrap(err, "transfer cny to sie"))
 			c.JSON(http.StatusInternalServerError, generr.CnyToSieErr)
+			return
+		}
+		amount = fmt.Sprintf("%.5f", math.Ceil(sieAmount*100000)/100000)
+	} else if strings.ToUpper(req.Token) == SUSD {
+		sieAmount, err := susdToSie(req.Amount * req.Rate)
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "transfer susd to sie"))
+			c.JSON(http.StatusInternalServerError, generr.SusdToSieErr)
 			return
 		}
 		amount = fmt.Sprintf("%.5f", math.Ceil(sieAmount*100000)/100000)
@@ -285,6 +294,48 @@ func cnyToSie(cnyVolume float64) (sieVolume float64, err error) {
 	}
 
 	str, _ = ticker["last"].(string)
+
+	lastPrice, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		return
+	}
+
+	sieVolume = susdVolume / lastPrice
+	return
+}
+
+func susdToSie(susdVolume float64) (sieVolume float64, err error) {
+	sie := fmt.Sprintf("%s?market=%s",
+		config.Server.OTCHost+getMarketInfo, "siesusd")
+	req, _ := http.NewRequest("GET", sie, nil)
+	req.Header.Set("otc-session-id", "isecret")
+
+	client := http.Client{Timeout: 10 * time.Second}
+	rsp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+
+	res := make(map[string]interface{}, 0)
+	decoder := json.NewDecoder(rsp.Body)
+	err = decoder.Decode(&res)
+	if err != nil {
+		return
+	}
+
+	m, ok := res["result"].(map[string]interface{})
+	if !ok {
+		err = errors.New("result is not a map")
+		return
+	}
+
+	ticker, ok := m["ticker"].(map[string]interface{})
+	if !ok {
+		err = errors.New("ticker is not a map")
+		return
+	}
+
+	str, _ := ticker["last"].(string)
 
 	lastPrice, err := strconv.ParseFloat(str, 64)
 	if err != nil {

@@ -30,3 +30,10 @@ func (*oauth) GetUIDByAppID(openID, appID string) (uid string, err error) {
 	err = row.Scan(&uid)
 	return
 }
+
+func (*oauth) GetOpenIDByAppID(UID, appID string) (openID string, err error) {
+	row := db.MysqlCli.QueryRow("select open_id from oauth where uid = ? and app_id = ?",
+		UID, appID)
+	err = row.Scan(&openID)
+	return
+}

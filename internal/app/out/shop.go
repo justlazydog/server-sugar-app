@@ -70,7 +70,7 @@ func Put(c *gin.Context) {
 		amount = fmt.Sprintf("%.5f", math.Ceil(req.Amount*req.Rate*100000)/100000)
 	}
 
-	err = deductDestructAmount(req.AppID, config.Server.MerchantUUID, req.OrderID, req.MerchantUUID, SIE, Remark, amount)
+	err = deductDestructAmount(config.Server.MerchantUUID, req.OrderID, req.MerchantUUID, SIE, Remark, amount)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "deduct destruct"))
 		c.JSON(http.StatusInternalServerError, generr.DestructAmountError)
@@ -86,6 +86,19 @@ func Put(c *gin.Context) {
 
 	if userUID == "" {
 		log.Errorf("err: %+v", errors.Errorf("user_id: %s query no uid", userUID))
+		c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
+		return
+	}
+
+	bossOpenID, err := dao.Oauth.GetOpenIDByAppID(req.MerchantUUID, req.AppID)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get open_id from open-cloud"))
+		c.JSON(http.StatusInternalServerError, generr.ServerError)
+		return
+	}
+
+	if bossOpenID == "" {
+		log.Errorf("err: %+v", errors.Errorf("user: %s query no open_id", req.MerchantUUID))
 		c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
 		return
 	}
@@ -114,7 +127,7 @@ func Put(c *gin.Context) {
 	boss := model.Boss{
 		AppID:         req.AppID,
 		UID:           req.MerchantUUID,
-		OpenID:        req.MerchantUUID,
+		OpenID:        bossOpenID,
 		OrderID:       req.OrderID,
 		Amount:        req.Amount,
 		Credit:        req.Amount * BossMultiple * ExtraMultiple,
@@ -139,7 +152,14 @@ func Put(c *gin.Context) {
 	return
 }
 
-func deductDestructAmount(appID, openID, orderID, merchantUUID, token, remark, value string) (err error) {
+func deductDestructAmount(openID, orderID, merchantUUID, token, remark, value string) (err error) {
+	var appID string
+	if config.Server.Env == "test" {
+		appID = "04565e551f7ff066"
+	} else {
+		appID = "576ae8b341e42274"
+	}
+
 	key, err := dao.App.GetKey(appID)
 	if err != nil {
 		return

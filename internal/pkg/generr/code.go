@@ -30,4 +30,6 @@ var (
 	DestructAmountError = &mErr{801, "销毁金额服务错误"}
 	CnyToSieErr         = &mErr{802, "CNY转换SIE错误"}
 	SusdToSieErr        = &mErr{803, "SUSD转换SIE错误"}
+
+	BalanceNotEnough = &mErr{901, "余额不足"}
 )

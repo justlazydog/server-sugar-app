@@ -81,6 +81,11 @@ func Put(c *gin.Context) {
 
 	err = deductDestructAmount(config.Server.MerchantUUID, req.OrderID, req.MerchantUUID, SIE, Remark, amount)
 	if err != nil {
+		if strings.Contains(err.Error(), "enough") {
+			log.Errorf("err: %+v", errors.Wrap(err, "deduct destruct"))
+			c.JSON(http.StatusInternalServerError, generr.BalanceNotEnough)
+			return
+		}
 		log.Errorf("err: %+v", errors.Wrap(err, "deduct destruct"))
 		c.JSON(http.StatusInternalServerError, generr.DestructAmountError)
 		return

@@ -38,6 +38,38 @@ const (
 	Remark = "第三方销毁金额"
 )
 
+func GetUserSumDestructAmount(c *gin.Context) {
+	req := struct {
+		AppID  string `form:"app_id" binding:"required"` // 应用ID
+		OpenID string `form:"open_id" binding:"required"`
+	}{}
+
+	err := c.ShouldBindWith(&req, binding.Form)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	log.Infof("req: %+v", req)
+
+	amount, err := dao.User.GetAmount(req.AppID, req.OpenID)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get user used amount"))
+		c.JSON(http.StatusBadRequest, generr.ReadDB)
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Code int                    `json:"code"`
+		Msg  string                 `json:"msg"`
+		Data map[string]interface{} `json:"data"`
+	}{200, "success", map[string]interface{}{
+		"amount": amount,
+	}})
+	return
+}
+
 func Put(c *gin.Context) {
 	req := struct {
 		AppID        string  `form:"app_id" binding:"required"`        // 应用ID
@@ -133,6 +165,10 @@ func Put(c *gin.Context) {
 
 	err = dao.User.Add(user)
 	if err != nil {
+		if strings.Contains(err.Error(), "Error 1062") {
+			c.JSON(http.StatusBadRequest, generr.RepeatOrderID)
+			return
+		}
 		log.Errorf("err: %+v", errors.Wrap(err, "add user record"))
 		c.JSON(http.StatusBadRequest, generr.ServerError)
 		return

@@ -38,6 +38,7 @@ func RunHttp() {
 	outGroup := r.Group("/out")
 	outGroup.Use(middleware.ValidateSign)
 	outGroup.PUT("/order", out.Put)
+	outGroup.GET("/amount", out.GetUserSumDestructAmount)
 
 	srv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port),

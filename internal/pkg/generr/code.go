@@ -15,8 +15,8 @@ var (
 	SignNotMatch = &mErr{602, "s不匹配"}
 	TimestampErr = &mErr{603, "t参数错误"}
 	TimestampOut = &mErr{604, "t超时"}
-	ReadDB       = &mErr{698, "读数据库错误"}
-	UpdateDB     = &mErr{699, "更新数据库错误"}
+	ReadDB       = &mErr{698, "读取数据错误"}
+	UpdateDB     = &mErr{699, "更新数据错误"}
 
 	SugarNoTargetUser = &mErr{701, "无目标用户信息"}
 	SugarNoToken      = &mErr{701, "token缺失"}
@@ -30,6 +30,7 @@ var (
 	DestructAmountError = &mErr{801, "销毁金额服务错误"}
 	CnyToSieErr         = &mErr{802, "CNY转换SIE错误"}
 	SusdToSieErr        = &mErr{803, "SUSD转换SIE错误"}
+	RepeatOrderID       = &mErr{804, "重复的订单ID"}
 
 	BalanceNotEnough = &mErr{901, "余额不足"}
 )

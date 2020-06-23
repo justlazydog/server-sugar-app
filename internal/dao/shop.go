@@ -159,6 +159,16 @@ func (*user) GetUsedAmount() (offline, online float64, err error) {
 	return
 }
 
+func (*user) GetAmount(appID, openID string) (amount float64, err error) {
+	row := db.MysqlCli.QueryRow("select sum(amount) as all_amount from shop_user where app_id = ? and open_id = ?", appID, openID)
+
+	err = row.Scan(&amount)
+	if err != nil {
+		return
+	}
+	return
+}
+
 type boss struct {
 }
 

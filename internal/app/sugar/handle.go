@@ -20,7 +20,8 @@ var (
 
 	calcSugar struct {
 		sync.Mutex
-		files []string
+		files          []string
+		sourceFileName []string
 	}
 )
 
@@ -58,16 +59,6 @@ func ReceiveCalcFile(c *gin.Context) {
 		return
 	}
 
-	// 检查是否重复上传
-	for _, filename := range calcSugar.files {
-		if askFilename == filename {
-			err = errors.Errorf("filename: %s", askFilename)
-			log.Errorf("err: %+v", errors.Wrap(err, "received same filename"))
-			c.JSON(http.StatusBadRequest, generr.SugarRepeatFile)
-			return
-		}
-	}
-
 	fh, err := c.FormFile("file")
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "parse file"))
@@ -83,7 +74,18 @@ func ReceiveCalcFile(c *gin.Context) {
 	}
 
 	calcSugar.Lock()
+	// 检查是否重复上传
+	for _, filename := range calcSugar.sourceFileName {
+		if askFilename == filename {
+			err = errors.Errorf("filename: %s", askFilename)
+			log.Errorf("err: %+v", errors.Wrap(err, "received same filename"))
+			c.JSON(http.StatusBadRequest, generr.SugarRepeatFile)
+			return
+		}
+	}
+
 	calcSugar.files = append(calcSugar.files, filename)
+	calcSugar.sourceFileName = append(calcSugar.sourceFileName, askFilename)
 	calcSugar.Unlock()
 
 	// 待所需上传文件皆以上传，开始计算 sugar 业绩

@@ -77,6 +77,7 @@ func ReceiveCalcFile(c *gin.Context) {
 	// 检查是否重复上传
 	for _, filename := range calcSugar.sourceFileName {
 		if askFilename == filename {
+			calcSugar.Unlock()
 			err = errors.Errorf("filename: %s", askFilename)
 			log.Errorf("err: %+v", errors.Wrap(err, "received same filename"))
 			c.JSON(http.StatusBadRequest, generr.SugarRepeatFile)
@@ -94,6 +95,7 @@ func ReceiveCalcFile(c *gin.Context) {
 		go func() {
 			defer func() {
 				calcSugar.files = []string{}
+				calcSugar.sourceFileName = []string{}
 			}()
 			err = calcReward(calcSugar.files)
 			if err != nil {

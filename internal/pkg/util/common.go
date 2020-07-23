@@ -91,7 +91,11 @@ func PostIMServer(url, body string) (data map[string]interface{}, err error) {
 		req.Header.Set("content-type", "application/json")
 
 		rsp, err = http.DefaultClient.Do(req)
-		if err != nil || rsp.StatusCode != 200 {
+		if err != nil {
+			time.Sleep(time.Second * time.Duration(i))
+			continue
+		} else if rsp.StatusCode != 200 {
+			rsp.Body.Close()
 			time.Sleep(time.Second * time.Duration(i))
 			continue
 		} else {
@@ -101,9 +105,9 @@ func PostIMServer(url, body string) (data map[string]interface{}, err error) {
 	if err != nil {
 		return
 	}
+	defer rsp.Body.Close()
 
 	rspBody, _ := ioutil.ReadAll(rsp.Body)
-	rsp.Body.Close()
 
 	type Result struct {
 		Code int                    `json:"code"`

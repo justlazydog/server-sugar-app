@@ -240,6 +240,7 @@ func deductDestructAmount(openID, orderID, merchantUUID, token, remark, value st
 	if err != nil {
 		return
 	}
+	defer rsp.Body.Close()
 
 	type result struct {
 		Code int    `json:"code"`
@@ -278,6 +279,7 @@ func cnyToSie(cnyVolume float64) (sieVolume float64, err error) {
 	if err != nil {
 		return
 	}
+	defer rsp.Body.Close()
 
 	res := make(map[string]interface{}, 0)
 	decoder := json.NewDecoder(rsp.Body)
@@ -314,6 +316,7 @@ func cnyToSie(cnyVolume float64) (sieVolume float64, err error) {
 	if err != nil {
 		return
 	}
+	defer rsp.Body.Close()
 
 	res = make(map[string]interface{}, 0)
 	decoder = json.NewDecoder(rsp.Body)
@@ -356,6 +359,7 @@ func susdToSie(susdVolume float64) (sieVolume float64, err error) {
 	if err != nil {
 		return
 	}
+	defer rsp.Body.Close()
 
 	res := make(map[string]interface{}, 0)
 	decoder := json.NewDecoder(rsp.Body)

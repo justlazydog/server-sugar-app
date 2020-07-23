@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 
@@ -18,6 +19,8 @@ var srv *http.Server
 
 func RunHttp() {
 	r := gin.Default()
+	pprof.Register(r)
+
 	shopGroup := r.Group("/shop")
 	shopGroup.PUT("/order", shop.Put)
 	shopGroup.GET("/user/credit", shop.GetUserCredit)

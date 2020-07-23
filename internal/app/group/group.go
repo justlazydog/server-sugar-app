@@ -81,14 +81,41 @@ func UpdateGroupRelation() (err error) {
 		Transport: &http.Transport{
 			//Proxy:           http.ProxyURL(proxyUrl),
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			Dial:            TimeoutDialer(3*time.Minute, 3*time.Minute),
 		},
+		Timeout: time.Minute,
 	}
-	rsp, err := client.Do(req)
+
+	var rsp *http.Response
+	for i := 0; i < 3; i++ {
+		rsp, err = client.Do(req)
+		if err != nil {
+			log.Warnf("ask IM err: %v, ask cnt: %d", err, i+1)
+			time.Sleep(time.Millisecond * 200)
+			continue
+		}
+
+		if rsp.StatusCode != 200 {
+			rsp.Body.Close()
+			log.Warnf("IM rsp code not ok, ask cnt: %d", err, i+1)
+			time.Sleep(time.Millisecond * 200)
+			continue
+		}
+		break
+	}
+
 	if err != nil {
-		err = errors.Wrap(err, "client do")
+		err = errors.Wrap(err, "ask IM")
 		return
 	}
+
+	if rsp.StatusCode != 200 {
+		rspBody, _ := ioutil.ReadAll(rsp.Body)
+		rsp.Body.Close()
+		err = errors.New(string(rspBody))
+		err = errors.Wrap(err, "IM rsp not ok")
+		return
+	}
+
 	defer rsp.Body.Close()
 
 	rspBody, _ := ioutil.ReadAll(rsp.Body)

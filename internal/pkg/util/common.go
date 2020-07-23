@@ -90,21 +90,37 @@ func PostIMServer(url, body string) (data map[string]interface{}, err error) {
 		req.Header.Set("sign", hex.EncodeToString(sign[:]))
 		req.Header.Set("content-type", "application/json")
 
-		rsp, err = http.DefaultClient.Do(req)
+		client := http.Client{Timeout: time.Minute}
+		rsp, err = client.Do(req)
 		if err != nil {
+			log.Warnf("asd IM err: %v, cnt: %d", err, i)
 			time.Sleep(time.Second * time.Duration(i))
 			continue
-		} else if rsp.StatusCode != 200 {
+		}
+
+		if rsp.StatusCode != 200 {
+			log.Warnf("asd IM rsp not ok, cnt: %d", i)
 			rsp.Body.Close()
 			time.Sleep(time.Second * time.Duration(i))
 			continue
-		} else {
-			break
 		}
+
+		break
 	}
+
 	if err != nil {
+		err = errors.Wrap(err, "ask IM")
 		return
 	}
+
+	if rsp.StatusCode != 200 {
+		rspBody, _ := ioutil.ReadAll(rsp.Body)
+		rsp.Body.Close()
+		err = errors.New(string(rspBody))
+		err = errors.Wrap(err, "IM rsp not ok")
+		return
+	}
+
 	defer rsp.Body.Close()
 
 	rspBody, _ := ioutil.ReadAll(rsp.Body)

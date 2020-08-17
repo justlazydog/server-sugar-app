@@ -78,7 +78,7 @@ func ValidateSign(c *gin.Context) {
 	key, err := dao.App.GetKey(appID)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "get app key"))
-		c.JSON(http.StatusBadRequest, generr.TimestampOut)
+		c.JSON(http.StatusBadRequest, generr.AppErr)
 		c.Abort()
 		return
 	}

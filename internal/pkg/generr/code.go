@@ -15,6 +15,7 @@ var (
 	SignNotMatch = &mErr{602, "s不匹配"}
 	TimestampErr = &mErr{603, "t参数错误"}
 	TimestampOut = &mErr{604, "t超时"}
+	AppErr       = &mErr{605, "获取app错误"}
 	ReadDB       = &mErr{698, "读取数据错误"}
 	UpdateDB     = &mErr{699, "更新数据错误"}
 

@@ -122,6 +122,12 @@ func DownloadRewardFile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, generr.SugarNoToken)
 		return
 	}
+
+	if curFilePath == "" {
+		dirname := time.Now().Format("2006-01-02") + "/"
+		curFilePath = "sugar/" + dirname
+	}
+
 	c.File(curFilePath + filename)
 }
 

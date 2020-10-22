@@ -99,8 +99,9 @@ func PostIMServer(url, body string) (data map[string]interface{}, err error) {
 		}
 
 		if rsp.StatusCode != 200 {
-			log.Warnf("asd IM rsp not ok, cnt: %d", i)
+			bs, _ := ioutil.ReadAll(rsp.Body)
 			rsp.Body.Close()
+			log.Warnf("asd IM rsp not ok, cnt: %d, msg: %s", i, string(bs))
 			time.Sleep(time.Second * time.Duration(i))
 			continue
 		}

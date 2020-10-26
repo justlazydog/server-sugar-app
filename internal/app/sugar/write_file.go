@@ -42,7 +42,7 @@ func writeFile(user map[string]float64, flag int) {
 }
 
 // 写算力文件
-func writeForceFile(user map[string]float64, amount map[string]float64, flag int) (filename string) {
+func writeForceFile(details map[string]*RewardDetail, flag int) (filename string) {
 	if flag == 1 {
 		filename = fmt.Sprintf("%s%s_%s.txt", curFilePath, "possess", time.Now().Format("200601021504"))
 	} else {
@@ -57,8 +57,8 @@ func writeForceFile(user map[string]float64, amount map[string]float64, flag int
 	defer f.Close()
 
 	if flag == 1 {
-		for key, value := range user {
-			str := fmt.Sprintf("id: %s, possess_force: %15.6f\n", key, math.Floor(value*Precision)/Precision)
+		for key, d := range details {
+			str := fmt.Sprintf("id: %s, possess_force: %15.6f\n", key, math.Floor(d.BalanceHashRate*Precision)/Precision)
 			_, err = f.WriteString(str)
 			if err != nil {
 				log.Warnf("err: %+v", errors.Wrap(err, "write string"))
@@ -66,19 +66,19 @@ func writeForceFile(user map[string]float64, amount map[string]float64, flag int
 			}
 		}
 	} else {
-		for key, value := range user {
+		for uid, d := range details {
 			m := make(map[string]bool)
-			users, err := group.GetAllDownLineUsers(key, m)
+			users, err := group.GetAllDownLineUsers(uid, m)
 			if err != nil {
-				log.Warnf("err: %+v", errors.Wrap(err, "get all downline users"))
+				log.Warnf("err: %+v", errors.Wrap(err, "get all downline details"))
 				return
 			}
-			teamAmount := amount[key]
+			teamAmount := details[uid].TodayBal
 			for _, u := range users {
-				teamAmount += amount[u]
+				teamAmount += details[u].TodayBal
 			}
 			str := fmt.Sprintf("id: %s, invite_force: %15.6f, team_amount: %15.6f\n",
-				key, math.Floor(value*Precision)/Precision, math.Floor(teamAmount*Precision)/Precision)
+				uid, math.Floor(d.InviteHashRate*Precision)/Precision, math.Floor(teamAmount*Precision)/Precision)
 			_, err = f.WriteString(str)
 			if err != nil {
 				log.Warnf("err: %+v", errors.Wrap(err, "write string"))
@@ -91,25 +91,44 @@ func writeForceFile(user map[string]float64, amount map[string]float64, flag int
 	return filename
 }
 
+func writeGrowthRateFile(users map[string]*RewardDetail) (string, error) {
+	filename := fmt.Sprintf("%s%s_%s.txt", curFilePath, "growth_rate", time.Now().Format("200601021504"))
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Warnf("err: %+v", errors.Wrap(err, "create file"))
+		return filename, err
+	}
+	defer f.Close()
+
+	for uid, d := range users {
+		str := fmt.Sprintf("%s,%d\n", uid, int64(d.GrowthRate))
+		_, err = f.WriteString(str)
+		if err != nil {
+			log.Warnf("err: %+v", errors.Wrap(err, "write string"))
+			return filename, err
+		}
+	}
+
+	return filename, nil
+}
+
 // 写奖励文件
-func writeRewardFile(r1 map[string]float64, r2 map[string]float64) (zipFn []string, err error) {
-	if r1 == nil || r2 == nil {
-		err = errors.Wrap(fmt.Errorf("r1: %v, r2: %v", r1, r2), "lack of data")
+func writeRewardFile(details map[string]*RewardDetail) (zipFn []string, err error) {
+	if details == nil {
+		err = errors.Wrap(fmt.Errorf("details: %v", details), "lack of data")
 		return
 	}
 
 	t := time.Now().Unix()
 	fn1Path := fmt.Sprintf("%sreward_1_%d.txt", curFilePath, t)
 	fn2Path := fmt.Sprintf("%sreward_2_%d.txt", curFilePath, t)
+	detailPath := fmt.Sprintf("%sdetail_%d.txt", curFilePath, t)
 	// BOB要求2个奖励文件单独发送。。。
 	zipFn1 := fmt.Sprintf("reward_1_%d.zip", t)
 	zipFn2 := fmt.Sprintf("reward_2_%d.zip", t)
+	zipDetail := fmt.Sprintf("detail_%d.zip", t)
 
-	if err = writeRewardFileByMap(fn1Path, r1); err != nil {
-		err = errors.Wrap(err, "write reward file by map")
-		return
-	}
-	if err = writeRewardFileByMap(fn2Path, r2); err != nil {
+	if err = writeRewardFileByMap(fn1Path, fn2Path, detailPath, details); err != nil {
 		err = errors.Wrap(err, "write reward file by map")
 		return
 	}
@@ -123,31 +142,66 @@ func writeRewardFile(r1 map[string]float64, r2 map[string]float64) (zipFn []stri
 		err = errors.Wrap(err, "zip file")
 		return
 	}
+	if err = util.ZipFiles(curFilePath+zipDetail, []string{detailPath}); err != nil {
+		err = errors.Wrap(err, "zip file")
+		return
+	}
 	os.Remove(fn1Path)
 	os.Remove(fn2Path)
+	os.Remove(detailPath)
 	zipFn = []string{zipFn1, zipFn2}
 	return
 }
 
 // 根据奖励计算结果的map写文件
-func writeRewardFileByMap(filename string, m map[string]float64) (err error) {
-	file, err := os.Create(filename)
+func writeRewardFileByMap(filename1, filename2, fileDetail string, details map[string]*RewardDetail) (err error) {
+	file1, err := os.Create(filename1)
 	if err != nil {
-		err = errors.Wrap(err, "crate file")
+		err = errors.Wrap(err, "crate file1")
 		return
 	}
-	defer file.Close()
+	defer file1.Close()
 
-	var buf = bufio.NewWriter(file)
-	var line string
-	for k, v := range m {
-		if v > 0.000000 {
-			line = fmt.Sprintf("%s,%f\n", k, math.Floor(v*Precision)/Precision)
-			_, err = buf.WriteString(line)
-			if err != nil {
-				continue
-			}
-		}
+	file2, err := os.Create(filename2)
+	if err != nil {
+		err = errors.Wrap(err, "crate file1")
+		return
 	}
-	return buf.Flush()
+	defer file2.Close()
+
+	fileD, err := os.Create(fileDetail)
+	if err != nil {
+		err = errors.Wrap(err, "crate fileD")
+		return
+	}
+	defer fileD.Close()
+
+	var buf1 = bufio.NewWriter(file1)
+	var buf2 = bufio.NewWriter(file2)
+	var bufD = bufio.NewWriter(fileD)
+	var line string
+	for uid, detail := range details {
+		if detail.BalanceReward > 0.000000 {
+			line = fmt.Sprintf("%s,%f\n", uid, math.Floor(detail.BalanceReward*Precision)/Precision)
+			buf1.WriteString(line)
+		}
+		if detail.InviteReward > 0.000000 {
+			line = fmt.Sprintf("%s,%f\n", uid, math.Floor(detail.InviteReward*Precision)/Precision)
+			buf2.WriteString(line)
+		}
+		line = fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+			uid, detail.YesterdayBal, detail.TodayBal, detail.DestroyHashRate, detail.YesterdayGrowthRate,
+			detail.GrowthRate, detail.BalanceHashRate, detail.InviteHashRate, detail.BalanceReward, detail.InviteReward)
+		bufD.WriteString(line)
+	}
+	err1 := buf1.Flush()
+	err2 := buf2.Flush()
+	err3 := bufD.Flush()
+	if err1 != nil {
+		return err1
+	}
+	if err2 != nil {
+		return err2
+	}
+	return err3
 }

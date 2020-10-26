@@ -54,6 +54,7 @@ type sie struct {
 	SIEAddAccounts    []string `yaml:"sie_add_accounts"`
 	SIESubAccounts    []string `yaml:"sie_sub_accounts"`
 	Sugars            []Sugar  `yaml:"sugars"`
+	SIERewardAccount  string   `yaml:"sie_reward_account"`
 }
 
 func Init() {

@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -68,6 +69,36 @@ func ParseCompressAccountFile(filename string) (m map[string]float64, sumBalance
 		}
 	}
 	return
+}
+
+func ParseGrowthRateFile(path string) (map[string]float64, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	r := bufio.NewReader(f)
+	m := make(map[string]float64)
+	for {
+		line, _, err := r.ReadLine()
+		if err == nil {
+			bs := bytes.Split(line, []byte(","))
+			if len(bs) == 2 && len(bs[0]) > 0 && len(bs[1]) > 0 {
+				uid := string(bytes.TrimSpace(bs[0]))
+				growthRate, err := strconv.ParseFloat(string(bytes.TrimSpace(bs[1])), 64)
+				if err != nil {
+					err = errors.Wrap(err, "parse string to float")
+					return m, err
+				}
+				m[uid] = growthRate
+			}
+		} else if err == io.EOF {
+			break
+		} else {
+			return m, err
+		}
+	}
+	return m, nil
 }
 
 // IM服务

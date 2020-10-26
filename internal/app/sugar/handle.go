@@ -97,7 +97,7 @@ func ReceiveCalcFile(c *gin.Context) {
 				calcSugar.files = []string{}
 				calcSugar.sourceFileName = []string{}
 			}()
-			err = calcReward(calcSugar.files)
+			err = calcReward()
 			if err != nil {
 				log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
 				return
@@ -149,7 +149,7 @@ func ManualStart(c *gin.Context) {
 	go group.GetLatestGroupRela()
 
 	go func() {
-		err = calcReward(req.Filenames)
+		err = calcReward()
 		if err != nil {
 			log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
 			return

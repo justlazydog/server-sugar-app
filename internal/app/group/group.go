@@ -122,6 +122,7 @@ func UpdateGroupRelation() (err error) {
 	rels := make([]map[string]string, 0)
 	err = json.Unmarshal(rspBody, &rels)
 	if err != nil {
+		//fmt.Println(string(rspBody))
 		err = errors.Wrap(err, "json unmarshal")
 		return
 	}

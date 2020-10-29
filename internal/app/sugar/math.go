@@ -26,6 +26,8 @@ type RewardDetail struct {
 	InviteHashRate      float64 // 邀请算力
 	BalanceReward       float64 // 持币奖励
 	InviteReward        float64 // 邀请奖励
+	ParentUID           string  // 邀请人
+	TeamHashRate        float64 // 区域算力
 }
 
 /*
@@ -225,12 +227,24 @@ func rewardTwo(details map[string]*RewardDetail, sumAmount float64) error {
 func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForce float64, err error) {
 	users := group.GetDownLineUsers(uid)
 	connRegion := make([]float64, 0)
+	var teamBalHashRate float64
+	detail, ok := details[uid]
+	if !ok {
+		detail = &RewardDetail{
+			YesterdayGrowthRate: 1,
+			GrowthRate:          1,
+		}
+		details[uid] = detail
+	}
+	teamBalHashRate = detail.BalanceHashRate
 	for _, user := range users {
 		if !isInWhiteList(user) {
 			var curProperty float64
 			detail, ok := details[user]
 			if ok {
 				curProperty = detail.TodayBal
+				teamBalHashRate += detail.BalanceHashRate
+				detail.ParentUID = uid
 			}
 			m := make(map[string]bool)
 			subUsers, err := group.GetAllDownLineUsers(user, m)
@@ -243,12 +257,14 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 					detail, ok := details[v]
 					if ok {
 						curProperty += detail.TodayBal
+						teamBalHashRate += detail.BalanceHashRate
 					}
 				}
 			}
 			connRegion = append(connRegion, curProperty)
 		}
 	}
+	details[uid].TeamHashRate = teamBalHashRate
 
 	if len(connRegion) < 2 {
 		var fProperty float64

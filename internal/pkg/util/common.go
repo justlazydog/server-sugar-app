@@ -13,7 +13,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -72,10 +71,23 @@ func ParseCompressAccountFile(filename string) (m map[string]float64, sumBalance
 }
 
 func ParseGrowthRateFile(path string) (map[string]float64, error) {
-	f, err := os.Open(path)
+	rc, err := zip.OpenReader(path)
 	if err != nil {
+		err = errors.Wrap(err, "open zip file reader")
 		return nil, err
 	}
+	defer rc.Close()
+
+	if len(rc.Reader.File) == 0 || rc.Reader.File[0] == nil {
+		err = errors.New("empty zip file")
+		return nil, err
+	}
+	f, err := rc.Reader.File[0].Open()
+	if err != nil {
+		err = errors.Wrap(err, "open zip file")
+		return nil, err
+	}
+	defer f.Close()
 
 	r := bufio.NewReader(f)
 	m := make(map[string]float64)

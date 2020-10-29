@@ -189,9 +189,10 @@ func writeRewardFileByMap(filename1, filename2, fileDetail string, details map[s
 			line = fmt.Sprintf("%s,%f\n", uid, math.Floor(detail.InviteReward*Precision)/Precision)
 			buf2.WriteString(line)
 		}
-		line = fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+		line = fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%s\n",
 			uid, detail.YesterdayBal, detail.TodayBal, detail.DestroyHashRate, detail.YesterdayGrowthRate,
-			detail.GrowthRate, detail.BalanceHashRate, detail.InviteHashRate, detail.BalanceReward, detail.InviteReward)
+			detail.GrowthRate, detail.BalanceHashRate, detail.InviteHashRate, detail.BalanceReward, detail.InviteReward,
+			detail.TeamHashRate, detail.ParentUID)
 		bufD.WriteString(line)
 	}
 	err1 := buf1.Flush()

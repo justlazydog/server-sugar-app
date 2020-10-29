@@ -1,6 +1,7 @@
 package out
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -125,29 +126,37 @@ func Put(c *gin.Context) {
 
 	userUID, err := dao.Oauth.GetUIDByAppID(req.OpenID, req.AppID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusInternalServerError, generr.SugarNoTargetUser)
+			return
+		}
 		log.Errorf("err: %+v", errors.Wrap(err, "get uid from open-cloud"))
 		c.JSON(http.StatusInternalServerError, generr.ServerError)
 		return
 	}
 
-	if userUID == "" {
-		log.Errorf("err: %+v", errors.Errorf("user_id: %s query no uid", userUID))
-		c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
-		return
-	}
+	//if userUID == "" {
+	//	log.Errorf("err: %+v", errors.Errorf("user_id: %s query no uid", userUID))
+	//	c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
+	//	return
+	//}
 
 	bossOpenID, err := dao.Oauth.GetOpenIDByAppID(req.MerchantUUID, req.AppID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusInternalServerError, generr.SugarNoTargetUser)
+			return
+		}
 		log.Errorf("err: %+v", errors.Wrap(err, "get open_id from open-cloud"))
 		c.JSON(http.StatusInternalServerError, generr.ServerError)
 		return
 	}
 
-	if bossOpenID == "" {
-		log.Errorf("err: %+v", errors.Errorf("user: %s query no open_id", req.MerchantUUID))
-		c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
-		return
-	}
+	//if bossOpenID == "" {
+	//	log.Errorf("err: %+v", errors.Errorf("user: %s query no open_id", req.MerchantUUID))
+	//	c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
+	//	return
+	//}
 
 	req.Amount, _ = strconv.ParseFloat(amount, 64)
 
@@ -191,6 +200,14 @@ func Put(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, generr.UpdateDB)
 		return
 	}
+
+	log.Infof("rsp :%+v", struct {
+		Code int                    `json:"code"`
+		Msg  string                 `json:"msg"`
+		Data map[string]interface{} `json:"data"`
+	}{200, "success", map[string]interface{}{
+		"sie": amount,
+	}})
 
 	c.JSON(http.StatusOK, struct {
 		Code int                    `json:"code"`

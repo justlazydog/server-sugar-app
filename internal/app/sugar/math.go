@@ -249,7 +249,7 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 			var curProperty float64
 			detail, ok := details[user]
 			if ok {
-				curProperty = detail.TodayBal
+				curProperty = detail.BalanceHashRate
 				teamBalHashRate += detail.BalanceHashRate
 				detail.ParentUID = uid
 			}
@@ -263,7 +263,7 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 				if !isInWhiteList(v) {
 					detail, ok := details[v]
 					if ok {
-						curProperty += detail.TodayBal
+						curProperty += detail.BalanceHashRate
 						teamBalHashRate += detail.BalanceHashRate
 					}
 				}

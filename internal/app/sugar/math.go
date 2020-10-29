@@ -207,7 +207,14 @@ func rewardTwo(details map[string]*RewardDetail, sumAmount float64) error {
 	uForeM[sysAccountB] = allForce * 0.025
 
 	for k, v := range uForeM {
-		details[k].InviteReward = v / (allForce * 1.05) * sumAmount
+		detail, ok := details[k]
+		if !ok {
+			detail := &RewardDetail{
+				YesterdayGrowthRate: 1,
+			}
+			details[k] = detail
+		}
+		detail.InviteReward = v / (allForce * 1.05) * sumAmount
 	}
 
 	go func() {

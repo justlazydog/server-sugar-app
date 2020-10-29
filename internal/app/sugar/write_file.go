@@ -75,7 +75,10 @@ func writeForceFile(details map[string]*RewardDetail, flag int) (filename string
 			}
 			teamAmount := details[uid].TodayBal
 			for _, u := range users {
-				teamAmount += details[u].TodayBal
+				uDetail, ok := details[u]
+				if ok {
+					teamAmount += uDetail.TodayBal
+				}
 			}
 			str := fmt.Sprintf("id: %s, invite_force: %15.6f, team_amount: %15.6f\n",
 				uid, math.Floor(d.InviteHashRate*Precision)/Precision, math.Floor(teamAmount*Precision)/Precision)

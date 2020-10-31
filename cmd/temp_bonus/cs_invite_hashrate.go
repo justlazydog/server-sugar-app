@@ -44,8 +44,9 @@ func main() {
 	defer f.Close()
 
 	ctx := &calcContext{
-		csAmounts:   csAmounts,
-		teamAmounts: make(map[string]float64),
+		csAmounts:      csAmounts,
+		teamAmounts:    make(map[string]float64),
+		inviteRelation: make(map[string]string),
 	}
 
 	ctx.calcTeamAmount(rootUser)
@@ -56,7 +57,8 @@ func main() {
 	for uid, teamAmount := range ctx.teamAmounts {
 		csAmount := ctx.csAmounts[uid]
 		if csAmount > 0 || teamAmount > 0 {
-			_, err := f.WriteString(fmt.Sprintf("%s,%.6f,%.6f\n", uid, csAmount, teamAmount))
+			// uid, cs数量, 团队数量, 邀请人uid
+			_, err := f.WriteString(fmt.Sprintf("%s,%.6f,%.6f,%s\n", uid, csAmount, teamAmount, ctx.inviteRelation[uid]))
 			if err != nil {
 				log.Fatalf("write file failed: %v", err)
 			}
@@ -66,14 +68,16 @@ func main() {
 }
 
 type calcContext struct {
-	csAmounts   map[string]float64
-	teamAmounts map[string]float64
+	csAmounts      map[string]float64
+	teamAmounts    map[string]float64
+	inviteRelation map[string]string // child:parent
 }
 
 func (ctx *calcContext) calcTeamAmount(uid string) float64 {
 	myTeamAmount := ctx.csAmounts[uid]
 	children := group.GetDownLineUsers(uid)
 	for _, child := range children {
+		ctx.inviteRelation[child] = uid
 		myTeamAmount += ctx.calcTeamAmount(child)
 	}
 	ctx.teamAmounts[uid] = myTeamAmount

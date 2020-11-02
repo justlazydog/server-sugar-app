@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"server-sugar-app/internal/app/group"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,7 @@ import (
 
 const (
 	Precision = 1000000
+	rootUser  = "a3b640a1-1de0-4fe8-9b57-b3985256efb2"
 )
 
 var curFilePath string
@@ -156,9 +158,9 @@ func calcReward() (err error) {
 	curRealCurrency := curCurrency + totalIssuerAmount
 
 	// make up user details
-	rewardOneDetails := make(map[string]*RewardDetail)
+	rewardDetails := make(map[string]*RewardDetail)
 	for u, bal := range todaySIEBals {
-		rewardOneDetails[u] = &RewardDetail{
+		rewardDetails[u] = &RewardDetail{
 			YesterdayBal:        yesterdaySIEBals[u],
 			TodayBal:            bal,
 			DestroyHashRate:     userDestroyHashRate[u],
@@ -166,15 +168,19 @@ func calcReward() (err error) {
 		}
 	}
 
-	err = rewardOne(rewardOneDetails, totalIssuerAmount/2)
+	err = rewardOne(rewardDetails, totalIssuerAmount/2)
 	if err != nil {
 		return fmt.Errorf("reward one failed: %v", err)
 	}
 
-	err = rewardTwo(rewardOneDetails, totalIssuerAmount/2)
+	err = rewardTwo(rewardDetails, totalIssuerAmount/2)
 	if err != nil {
 		return fmt.Errorf("reward two failed: %v", err)
 	}
+
+	writeParent(rootUser, rewardDetails)
+
+	// 记录每个人的上线
 
 	newSugar := model.Sugar{
 		Sugar:        totalIssuerAmount,
@@ -199,7 +205,7 @@ func calcReward() (err error) {
 		return errors.Wrap(err, "tx begin")
 	}
 
-	for user, detail := range rewardOneDetails {
+	for user, detail := range rewardDetails {
 		if detail.BalanceReward > 0.000000 {
 			u := model.UserReward{
 				UID:     user,
@@ -229,7 +235,7 @@ func calcReward() (err error) {
 	log.Infof("over save user_reward, cost time: %v", time.Since(t))
 
 	// 生成奖励数据文件
-	rewardFiles, err := writeRewardFile(rewardOneDetails)
+	rewardFiles, err := writeRewardFile(rewardDetails)
 	if err != nil {
 		return errors.Wrap(err, "write reward file")
 	}
@@ -238,6 +244,18 @@ func calcReward() (err error) {
 	// 通知IM下载文件
 	if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
 		return errors.Wrap(err, "notice IM server download reward file")
+	}
+	return
+}
+
+func writeParent(uid string, details map[string]*RewardDetail) {
+	children := group.GetDownLineUsers(uid)
+	for _, child := range children {
+		detail, ok := details[child]
+		if ok {
+			detail.ParentUID = uid
+		}
+		writeParent(child, details)
 	}
 	return
 }

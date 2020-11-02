@@ -82,7 +82,7 @@ func UpdateGroupRelation() (err error) {
 			//Proxy:           http.ProxyURL(proxyUrl),
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
-		Timeout: 5 * time.Minute,
+		Timeout: 10 * time.Minute,
 	}
 
 	var rsp *http.Response

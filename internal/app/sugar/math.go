@@ -251,7 +251,6 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 			if ok {
 				curProperty = detail.BalanceHashRate
 				teamBalHashRate += detail.BalanceHashRate
-				detail.ParentUID = uid
 			}
 			m := make(map[string]bool)
 			subUsers, err := group.GetAllDownLineUsers(user, m)

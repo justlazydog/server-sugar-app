@@ -345,11 +345,11 @@ func noticeIMDownloadRewardFile(filenames []string) (err error) {
 /*
 销毁算力
 - 销毁后，用户获得销毁算力为销毁的sie数量的10倍，同时商家获得销毁的sie数量的2倍算力
-- 个人销毁算力有效期为销毁后2年，商家销毁有效期为销毁后3年
+- 个人销毁算力有效期为销毁后3年，商家销毁有效期为销毁后3年
 */
 func destroyHashRates() (map[string]float64, error) {
 	now := time.Now()
-	userDestroyedAmount, err := dao.User.QueryDestroyedAmountGroupByUID(now.Add(-2 * 365 * 24 * time.Hour))
+	userDestroyedAmount, err := dao.User.QueryDestroyedAmountGroupByUID(now.Add(-3 * 365 * 24 * time.Hour))
 	if err != nil {
 		return nil, fmt.Errorf("QueryDestroyedAmountGroupByUID failed: %v", err)
 	}

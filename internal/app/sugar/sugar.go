@@ -349,11 +349,16 @@ func noticeIMDownloadRewardFile(filenames []string) (err error) {
 */
 func destroyHashRates() (map[string]float64, error) {
 	now := time.Now()
-	userDestroyedAmount, err := dao.User.QueryDestroyedAmountGroupByUID(now.Add(-3 * 365 * 24 * time.Hour))
+	year2023, _ := time.Parse("2006-01-02 15:04:05", "2023-12-01 00:00:00")
+	validityPeriod := -30 * 365 * 24 * time.Hour // 30 year
+	if now.After(year2023) {
+		validityPeriod = -3 * 365 * 24 * time.Hour // 3 year
+	}
+	userDestroyedAmount, err := dao.User.QueryDestroyedAmountGroupByUID(now.Add(validityPeriod))
 	if err != nil {
 		return nil, fmt.Errorf("QueryDestroyedAmountGroupByUID failed: %v", err)
 	}
-	merchantDestroyedAmount, err := dao.Boss.QueryDestroyedAmountGroupByBossID(now.Add(-3 * 365 * 24 * time.Hour))
+	merchantDestroyedAmount, err := dao.Boss.QueryDestroyedAmountGroupByBossID(now.Add(validityPeriod))
 	if err != nil {
 		return nil, fmt.Errorf("QueryDestroyedAmountGroupByBossID failed: %v", err)
 	}

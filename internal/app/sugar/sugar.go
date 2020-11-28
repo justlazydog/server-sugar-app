@@ -154,6 +154,7 @@ func calcReward() (err error) {
 
 	// 总发行量: 流通量的千分之一
 	totalIssuerAmount := curCurrency / 1000
+	log.Infof("总发行量: %f", totalIssuerAmount)
 
 	curRealCurrency := curCurrency + totalIssuerAmount
 

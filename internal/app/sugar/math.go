@@ -2,6 +2,7 @@ package sugar
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"math"
 	"os"
 	"sort"
@@ -54,6 +55,7 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 			hashRateTotal += d.BalanceHashRate
 		}
 	}
+	log.Infof("总持币算力: %f", hashRateTotal)
 
 	// make sure internal reward account exists
 	if _, ok := users[sie.SIERewardAccount]; !ok {
@@ -64,7 +66,7 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 	}
 
 	// 计算持币奖励
-	for _, d := range users {
+	for uid, d := range users {
 		// 持币糖果最低发放需要持有100SIE
 		rewardable := true
 		if d.TodayBal < 100 {
@@ -74,7 +76,11 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 		// 用户获得持币糖果的数量=用户个人持币算力/平台总持币算力*本次发放的糖果总和*50%, notice that sumAmount = issuerAmount / 2
 		reward := d.BalanceHashRate / hashRateTotal * sumAmount
 		if rewardable {
-			d.BalanceReward = reward
+			if uid == sie.SIERewardAccount { // 系统帐号
+				d.BalanceReward += reward
+			} else {
+				d.BalanceReward = reward
+			}
 		} else {
 			users[sie.SIERewardAccount].BalanceReward += reward
 		}
@@ -107,8 +113,8 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 /* 计算增长率
 增长率：每个钱包的初始增长率为1，通过每日持币量变化，增长率为
 	（（当日持有sie数量-前一日持有的sie数量）/前一日持有的sie数量*100%，如果前一日持币数量为0，则增长率为1）增长率的变化如下：
-钱包日持币量增加n%[200%,+∞)，增长率为(1/n)
-钱包日持币量增加[2%,200%)，增长率（+1）
+钱包日持币量增加n%[100%,+∞)，增长率为 (昨日增长率/(n+1))
+钱包日持币量增加[2%,100%)，增长率（+1）
 钱包日持币量增加不足2%，增长率（-1）
 钱包日持币量减少n%，增长率（-n），增长率最小为1
 */
@@ -117,10 +123,10 @@ func calculateGrowthRate(d *RewardDetail) {
 		d.YesterdayGrowthRate = 1
 	}
 	if d.YesterdayBal > 0 {
-		growthPercent := (d.TodayBal - d.YesterdayBal) / d.YesterdayBal
-		if growthPercent >= 2 { // 钱包日持币量增加n倍[200%,+∞)，增长率(/n)
-			d.GrowthRate = d.YesterdayGrowthRate / growthPercent
-		} else if growthPercent >= 0.02 { // 钱包日持币量增加[2%,200%)，增长率（+1）
+		growthPercent, _ := safeDiv(d.TodayBal-d.YesterdayBal, d.YesterdayBal)
+		if growthPercent >= 1 { // 钱包日持币量增加n倍[100%,+∞)，增长率(昨日增长率/(n+1))
+			d.GrowthRate, _ = safeDiv(d.YesterdayGrowthRate, growthPercent+1)
+		} else if growthPercent >= 0.02 { // 钱包日持币量增加[2%,100%)，增长率（+1）
 			d.GrowthRate = d.YesterdayGrowthRate + 1
 		} else if growthPercent >= 0 { // 钱包日持币量增加不足2%，增长率（-1）
 			d.GrowthRate = d.YesterdayGrowthRate - 1
@@ -303,4 +309,10 @@ func isInWhiteList(uid string) bool {
 		}
 	}
 	return false
+}
+
+func safeDiv(f1, f2 float64) (float64, bool) {
+	d1 := decimal.NewFromFloat(f1)
+	d2 := decimal.NewFromFloat(f2)
+	return d1.Div(d2).Float64()
 }

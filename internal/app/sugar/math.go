@@ -113,7 +113,7 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 /* 计算增长率
 增长率：每个钱包的初始增长率为1，通过每日持币量变化，增长率为
 	（（当日持有sie数量-前一日持有的sie数量）/前一日持有的sie数量*100%，如果前一日持币数量为0，则增长率为1）增长率的变化如下：
-钱包日持币量增加n%[100%,+∞)，增长率为 (昨日增长率/(n+1))
+钱包日持币量增加n%[100%,+∞)，增长率为 (昨日增长率/(n+1)) ，向下取整
 钱包日持币量增加[2%,100%)，增长率（+1）
 钱包日持币量增加不足2%，增长率（-1）
 钱包日持币量减少n%，增长率（-n），增长率最小为1
@@ -126,6 +126,7 @@ func calculateGrowthRate(d *RewardDetail) {
 		growthPercent, _ := safeDiv(d.TodayBal-d.YesterdayBal, d.YesterdayBal)
 		if growthPercent >= 1 { // 钱包日持币量增加n倍[100%,+∞)，增长率(昨日增长率/(n+1))
 			d.GrowthRate, _ = safeDiv(d.YesterdayGrowthRate, growthPercent+1)
+			d.GrowthRate = math.Floor(d.GrowthRate)
 		} else if growthPercent >= 0.02 { // 钱包日持币量增加[2%,100%)，增长率（+1）
 			d.GrowthRate = d.YesterdayGrowthRate + 1
 		} else if growthPercent >= 0 { // 钱包日持币量增加不足2%，增长率（-1）

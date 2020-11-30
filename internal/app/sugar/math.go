@@ -35,7 +35,7 @@ type RewardDetail struct {
 持币糖果最低发放需要持有100SIE
 持币不足100SIE的奖励发放到一个特定的账户上。
 */
-func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
+func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 	log.Info("Start calc reward one...")
 	t := time.Now()
 
@@ -44,9 +44,20 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 
 	// internal account
 	sie := config.SIE
+	// 特殊系统账户
+	sysAccountA := sie.SIERewardAccounts[0]
+	sysAccountB := sie.SIERewardAccounts[1]
+
+	// make sure account exists
+	if _, ok := details[sysAccountA]; !ok {
+		details[sysAccountA] = &RewardDetail{}
+	}
+	if _, ok := details[sysAccountB]; !ok {
+		details[sysAccountB] = &RewardDetail{}
+	}
 
 	// 计算持币算力
-	for u, d := range users { // 包含所有用户（即使持币为0）
+	for u, d := range details { // 包含所有用户（即使持币为0）
 		if !isInWhiteList(u) {
 			// 计算增长率
 			calculateGrowthRate(d)
@@ -58,15 +69,24 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 	log.Infof("总持币算力: %f", hashRateTotal)
 
 	// make sure internal reward account exists
-	if _, ok := users[sie.SIERewardAccount]; !ok {
-		users[sie.SIERewardAccount] = &RewardDetail{
+	if _, ok := details[sie.SIERewardAccount]; !ok {
+		details[sie.SIERewardAccount] = &RewardDetail{
 			YesterdayGrowthRate: 1,
 			GrowthRate:          1,
 		}
 	}
 
+	extraHashRate := hashRateTotal * 0.05
+	details[sysAccountA].BalanceHashRate += extraHashRate / 2
+	details[sysAccountB].BalanceHashRate += extraHashRate / 2
+	hashRateTotal += extraHashRate
+	defer func() {
+		details[sysAccountA].BalanceHashRate -= extraHashRate / 2
+		details[sysAccountA].BalanceHashRate -= extraHashRate / 2
+	}()
+
 	// 计算持币奖励
-	for uid, d := range users {
+	for uid, d := range details {
 		// 持币糖果最低发放需要持有100SIE
 		rewardable := true
 		if d.TodayBal < 100 {
@@ -82,12 +102,12 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 				d.BalanceReward = reward
 			}
 		} else {
-			users[sie.SIERewardAccount].BalanceReward += reward
+			details[sie.SIERewardAccount].BalanceReward += reward
 		}
 	}
 
 	go func() {
-		filename := writeForceFile(users, 1)
+		filename := writeForceFile(details, 1)
 		err := util.ZipFiles(filename+".zip", []string{filename})
 		if err != nil {
 			return
@@ -95,7 +115,7 @@ func rewardOne(users map[string]*RewardDetail, sumAmount float64) error {
 		os.Remove(filename)
 	}()
 
-	filename, err := writeGrowthRateFile(users)
+	filename, err := writeGrowthRateFile(details)
 	if err != nil {
 		return fmt.Errorf("write growth rate file failed: %v", err)
 	}

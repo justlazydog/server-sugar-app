@@ -115,6 +115,27 @@ func writeGrowthRateFile(users map[string]*RewardDetail) (string, error) {
 	return filename, nil
 }
 
+func writeLockSIEFile(lockSIE map[string]float64) (string, error) {
+	filename := fmt.Sprintf("%s%s_%s.txt", curFilePath, "lockSIE_", time.Now().Format("200601021504"))
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Warnf("err: %+v", errors.Wrap(err, "create file"))
+		return filename, err
+	}
+	defer f.Close()
+
+	for uid, v := range lockSIE {
+		str := fmt.Sprintf("%s,%f\n", uid, v)
+		_, err = f.WriteString(str)
+		if err != nil {
+			log.Warnf("err: %+v", errors.Wrap(err, "write string"))
+			return filename, err
+		}
+	}
+
+	return filename, nil
+}
+
 // 写奖励文件
 func writeRewardFile(details map[string]*RewardDetail) (zipFn []string, err error) {
 	if details == nil {

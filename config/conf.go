@@ -15,9 +15,10 @@ func init() {
 }
 
 var (
-	Server server
-	MySql  mysql
-	SIE    sie
+	Server        server
+	MySql         mysql
+	ExchangeMysql mysql
+	SIE           sie
 )
 
 // Server 配置
@@ -60,6 +61,7 @@ type sie struct {
 func Init() {
 	unmarshalServer()
 	unmarshalMysql()
+	unmarshalExchangeMysql()
 	unmarshalSIE()
 }
 
@@ -88,6 +90,22 @@ func unmarshalMysql() {
 	}
 
 	err = viper.Unmarshal(&MySql, func(config *mapstructure.DecoderConfig) {
+		config.TagName = "yaml"
+	})
+	if err != nil {
+		panic(fmt.Errorf("Fatal error unmarshal config file: %s \n", err))
+	}
+}
+
+func unmarshalExchangeMysql() {
+	viper.SetConfigName("exchange_mysql")
+	viper.AddConfigPath(confPath)
+	err := viper.ReadInConfig() // Find and read the config file
+	if err != nil {             // Handle errors reading the config file
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+
+	err = viper.Unmarshal(&ExchangeMysql, func(config *mapstructure.DecoderConfig) {
 		config.TagName = "yaml"
 	})
 	if err != nil {

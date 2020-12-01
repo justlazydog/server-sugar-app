@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"net/http"
+	"server-sugar-app/internal/dao"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -42,6 +43,14 @@ func RunHttp() {
 	outGroup.Use(middleware.ValidateSign)
 	outGroup.PUT("/order", out.Put)
 	outGroup.GET("/amount", out.GetUserSumDestructAmount)
+
+	r.GET("/test/lock/sie", func(c *gin.Context) {
+		lockedSIE, err := dao.GetLockedSIE()
+		if err != nil {
+			c.JSON(400, gin.H{"err": err.Error()})
+		}
+		c.JSON(200, lockedSIE)
+	})
 
 	srv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port),

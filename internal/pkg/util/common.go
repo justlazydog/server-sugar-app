@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,6 +44,42 @@ func ParseCompressAccountFile(filename string) (m map[string]float64, sumBalance
 	defer f.Close()
 
 	r := bufio.NewReader(f)
+	m = make(map[string]float64)
+	for {
+		line, _, err := r.ReadLine()
+		if err == nil {
+			bs := bytes.Split(line, []byte(","))
+			if len(bs) == 2 && len(bs[0]) > 0 && len(bs[1]) > 0 {
+				uid := string(bytes.TrimSpace(bs[0]))
+				balance, err := strconv.ParseFloat(string(bytes.TrimSpace(bs[1])), 64)
+				if err != nil {
+					err = errors.Wrap(err, "parse string to float")
+					return m, sumBalance, err
+				}
+				m[uid] = balance
+				sumBalance += balance
+			} else {
+				return m, sumBalance, err
+			}
+		} else if err == io.EOF {
+			break
+		} else {
+			err = errors.Wrap(err, "read line")
+			return m, sumBalance, err
+		}
+	}
+	return
+}
+
+func ParseLockSIEFile(filename string) (m map[string]float64, sumBalance float64, err error) {
+
+	f, err := os.Open(filename)
+	if err != nil {
+		err = fmt.Errorf("open file %s failed: %v", filename, err)
+		return
+	}
+	r := bufio.NewReader(f)
+
 	m = make(map[string]float64)
 	for {
 		line, _, err := r.ReadLine()

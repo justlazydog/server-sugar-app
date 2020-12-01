@@ -110,16 +110,70 @@ func getUserSIEBalance(now time.Time) (yesterday map[string]float64, today map[s
 	return
 }
 
+// 获取用户昨天和今天的sie冻结量
+func getUserLockSIEBalance(now time.Time) (yesterday map[string]float64, today map[string]float64, err error) {
+	yesterdayDirPath := "sugar/" + now.Add(-24*time.Hour).Format("2006-01-02")
+
+	filePrefix := "lockSIE_"
+
+	var yesterdayFilePath string
+
+	lockedSIEs, err := dao.GetLockedSIE()
+	if err != nil {
+		err = fmt.Errorf("GetLockedSIE failed: %v", err)
+		return
+	}
+	today = make(map[string]float64)
+	for i := range lockedSIEs {
+		today[lockedSIEs[i].UID] = lockedSIEs[i].Volume
+	}
+
+	// 持久化今日数据
+	_, err = writeLockSIEFile(today)
+	if err != nil {
+		err = fmt.Errorf("writeLockSIEFile failed: %v", err)
+		return
+	}
+
+	hasYesterday := false
+	yesterdayFilePath, err = getFilePath(yesterdayDirPath, filePrefix)
+	if err == nil {
+		hasYesterday = true
+	} else {
+		log.Warnf(err.Error())
+		err = nil
+	}
+
+	if hasYesterday {
+		yesterday, _, err = util.ParseLockSIEFile(yesterdayFilePath)
+	}
+	return
+}
+
 // 计算糖果奖励
 func calcReward() (err error) {
 	now := time.Now()
 	// 获取用户昨日增长率
 	yesterdayGrowthRate := getUserYesterdayGrowthRate(now)
+
 	// 用户sie持币量
 	yesterdaySIEBals, todaySIEBals, err := getUserSIEBalance(now)
 	if err != nil {
 		return fmt.Errorf("getUserSIEBalance failed: %v", err)
 	}
+	// 用户冻结数量(持久化冻结数据)
+	yesterdayLockSIEBals, todayLockSIEBals, err := getUserLockSIEBalance(now)
+	if err != nil {
+		return fmt.Errorf("getUserLockSIEBalance failed: %v", err)
+	}
+
+	for k, v := range yesterdayLockSIEBals {
+		yesterdaySIEBals[k] += v
+	}
+	for k, v := range todayLockSIEBals {
+		todaySIEBals[k] += v
+	}
+
 	// 用户销毁算力
 	userDestroyHashRate, err := destroyHashRates()
 	if err != nil {

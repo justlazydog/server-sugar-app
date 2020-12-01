@@ -169,6 +169,35 @@ func (*user) GetAmount(appID, openID string) (amount float64, err error) {
 	return
 }
 
+func (*user) QueryDestroyedAmountGroupByUID(beginAt time.Time) ([]model.User, error) {
+	result := make([]model.User, 0)
+	var rows *sql.Rows
+	rows, err := db.MysqlCli.Query(`
+select 
+	uid, sum(amount) as amount
+from 
+	shop_user 
+where 
+	created_at > ?
+group by
+	uid`, beginAt)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var (
+			user model.User
+		)
+		err = rows.Scan(&user.UID, &user.Amount)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, user)
+	}
+	return result, nil
+}
+
 type boss struct {
 }
 
@@ -347,4 +376,33 @@ func (*boss) GetBossRecordNum(bossID string) (num int, err error) {
 	row := db.MysqlCli.QueryRow("select count(*) from shop_boss where open_id = ? and flag = 2", bossID)
 	err = row.Scan(&num)
 	return
+}
+
+func (*boss) QueryDestroyedAmountGroupByBossID(beginAt time.Time) ([]model.Boss, error) {
+	result := make([]model.Boss, 0)
+	var rows *sql.Rows
+	rows, err := db.MysqlCli.Query(`
+select
+	uid, sum(amount) as amount
+from
+	shop_boss 
+where
+	created_at > ?
+group by uid`, beginAt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var (
+			user model.Boss
+		)
+		err = rows.Scan(&user.UID, &user.Amount)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, user)
+	}
+	return result, nil
 }

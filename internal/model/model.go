@@ -59,3 +59,8 @@ type UserReward struct {
 	Rsv1    float64 `json:"-"`        // 预留字段1
 	Rsv2    float64 `json:"-"`        // 预留字段2
 }
+
+type UserInfo struct {
+	UID        string  `json:"uid"`
+	GrowthRate float64 `json:"growth_rate"`
+}

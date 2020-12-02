@@ -11,11 +11,13 @@ import (
 )
 
 var (
-	MysqlCli *sql.DB
+	MysqlCli         *sql.DB
+	ExchangeMysqlCli *sql.DB
 )
 
 func Init() {
 	connMysql()
+	connExchangeMysql()
 }
 
 func connMysql() {
@@ -24,6 +26,21 @@ func connMysql() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", mysqlCfg.User, mysqlCfg.Password,
 		mysqlCfg.Host, mysqlCfg.Database)
 	MysqlCli, err = sql.Open("mysql", dsn)
+	if err != nil {
+		log.Error("Connect mysql error: ", err, " Connect dsn: ", dsn)
+		panic(err)
+	} else {
+		log.Infof("conn mysql %s success", dsn)
+	}
+	return
+}
+
+func connExchangeMysql() {
+	var err error
+	mysqlCfg := config.ExchangeMysql
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", mysqlCfg.User, mysqlCfg.Password,
+		mysqlCfg.Host, mysqlCfg.Database)
+	ExchangeMysqlCli, err = sql.Open("mysql", dsn)
 	if err != nil {
 		log.Error("Connect mysql error: ", err, " Connect dsn: ", dsn)
 		panic(err)

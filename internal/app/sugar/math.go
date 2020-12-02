@@ -82,7 +82,7 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 	hashRateTotal += extraHashRate
 	defer func() {
 		details[sysAccountA].BalanceHashRate -= extraHashRate / 2
-		details[sysAccountA].BalanceHashRate -= extraHashRate / 2
+		details[sysAccountB].BalanceHashRate -= extraHashRate / 2
 	}()
 
 	// 计算持币奖励

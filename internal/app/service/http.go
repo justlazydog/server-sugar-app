@@ -35,8 +35,9 @@ func RunHttp() {
 
 	sugarGroup := r.Group("/sugar")
 	sugarGroup.POST("/upload/:token/:filename", sugar.ReceiveCalcFile)
-	sugarGroup.POST("/start/manual", sugar.ManualStart)
 	sugarGroup.GET("/download/:filename", sugar.DownloadRewardFile)
+	sugarGroup.GET("/reward_detail", sugar.GetUserRewardDetail)
+	//sugarGroup.POST("/start/manual", sugar.ManualStart)
 
 	outGroup := r.Group("/out")
 	outGroup.Use(middleware.ValidateSign)

@@ -107,3 +107,45 @@ func (u *userReward) CreateWithTx(tx *sql.Tx, data []model.UserReward) (err erro
 	_, err = stmt.Exec(vals...)
 	return
 }
+
+type rewardDetail struct {
+}
+
+var RewardDetail = new(rewardDetail)
+
+func (*rewardDetail) CreateTx(tx *sql.Tx, data []model.RewardDetail) error {
+	var vals []interface{}
+
+	sqlStr := "insert into reward_detail (user_id,yesterday_bal,today_bal,destroy_hash_rate,yesterday_growth_rate," +
+		"growth_rate,balance_hash_rate,invite_hash_rate,balance_reward,invite_reward,parent_uid,team_hash_rate) values "
+	for _, row := range data {
+		sqlStr += "(?,?,?,?,?,?,?,?,?,?,?,?),"
+		vals = append(vals, row.UserID, row.YesterdayBal, row.TodayBal, row.DestroyHashRate, row.YesterdayGrowthRate,
+			row.GrowthRate, row.BalanceHashRate, row.InviteHashRate, row.BalanceReward, row.InviteReward, row.ParentUID,
+			row.TeamHashRate)
+	}
+	// trim the last ,
+	sqlStr = sqlStr[0 : len(sqlStr)-1]
+	// prepare the statement
+	stmt, err := tx.Prepare(sqlStr)
+	if err != nil {
+		return err
+	}
+
+	// format all vals at once
+	_, err = stmt.Exec(vals...)
+	return err
+}
+
+func (*rewardDetail) Get(userID string) (res model.RewardDetail, err error) {
+	sqlStr := "select * from reward_detail where user_id = ? order by id desc limit 1"
+	row := db.MysqlCli.QueryRow(sqlStr, userID)
+	var createTime string
+	err = row.Scan(&createTime, &res.UserID, &res.YesterdayBal, &res.TodayBal, &res.DestroyHashRate,
+		&res.YesterdayGrowthRate, &res.GrowthRate, &res.BalanceHashRate, &res.InviteHashRate, &res.BalanceReward,
+		&res.InviteReward, &res.ParentUID, &res.TeamHashRate)
+	if err == sql.ErrNoRows {
+		return res, nil
+	}
+	return res, err
+}

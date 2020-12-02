@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"server-sugar-app/config"
-	"server-sugar-app/internal/app/group"
+	"server-sugar-app/internal/dao"
 	"server-sugar-app/internal/pkg/generr"
 )
 
@@ -131,37 +131,58 @@ func DownloadRewardFile(c *gin.Context) {
 	c.File(curFilePath + filename)
 }
 
-func ManualStart(c *gin.Context) {
-	req := struct {
-		Filenames   []string `form:"filenames" binding:"required"`
-		CurFilePath string   `form:"cur_file_path" binding:"required"`
-	}{}
-
-	err := c.ShouldBind(&req)
-	if err != nil {
-		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+func GetUserRewardDetail(c *gin.Context) {
+	userID := c.Query("user_id")
+	if userID == "" {
 		c.JSON(http.StatusBadRequest, generr.ParseParam)
 		return
 	}
 
-	curFilePath = req.CurFilePath
-
-	go group.GetLatestGroupRela()
-
-	go func() {
-		err = calcReward()
-		if err != nil {
-			log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
-			return
-		}
-	}()
+	res, err := dao.RewardDetail.Get(userID)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "get user reward detail"))
+		c.JSON(http.StatusBadRequest, generr.ServerError)
+		return
+	}
 
 	c.JSON(http.StatusOK, struct {
-		Code int    `json:"code"`
-		Msg  string `json:"msg"`
-	}{Code: 200, Msg: "success"})
-	return
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", res})
 }
+
+//func ManualStart(c *gin.Context) {
+//	req := struct {
+//		Filenames   []string `form:"filenames" binding:"required"`
+//		CurFilePath string   `form:"cur_file_path" binding:"required"`
+//	}{}
+//
+//	err := c.ShouldBind(&req)
+//	if err != nil {
+//		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+//		c.JSON(http.StatusBadRequest, generr.ParseParam)
+//		return
+//	}
+//
+//	curFilePath = req.CurFilePath
+//
+//	go group.GetLatestGroupRela()
+//
+//	go func() {
+//		err = calcReward()
+//		if err != nil {
+//			log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
+//			return
+//		}
+//	}()
+//
+//	c.JSON(http.StatusOK, struct {
+//		Code int    `json:"code"`
+//		Msg  string `json:"msg"`
+//	}{Code: 200, Msg: "success"})
+//	return
+//}
 
 func checkFile(filename string) bool {
 	sie := config.SIE

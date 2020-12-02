@@ -174,7 +174,7 @@ func (*user) QueryDestroyedAmountGroupByUID(beginAt time.Time) ([]model.User, er
 	var rows *sql.Rows
 	rows, err := db.MysqlCli.Query(`
 select 
-	uid, sum(amount) as amount
+	uid, sum(credit) as credit
 from 
 	shop_user 
 where 
@@ -189,7 +189,7 @@ group by
 		var (
 			user model.User
 		)
-		err = rows.Scan(&user.UID, &user.Amount)
+		err = rows.Scan(&user.UID, &user.Credit)
 		if err != nil {
 			return nil, err
 		}
@@ -383,7 +383,7 @@ func (*boss) QueryDestroyedAmountGroupByBossID(beginAt time.Time) ([]model.Boss,
 	var rows *sql.Rows
 	rows, err := db.MysqlCli.Query(`
 select
-	uid, sum(amount) as amount
+	uid, sum(credit) as credit
 from
 	shop_boss 
 where
@@ -398,7 +398,7 @@ group by uid`, beginAt)
 		var (
 			user model.Boss
 		)
-		err = rows.Scan(&user.UID, &user.Amount)
+		err = rows.Scan(&user.UID, &user.Credit)
 		if err != nil {
 			return nil, err
 		}

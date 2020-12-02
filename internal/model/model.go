@@ -64,3 +64,18 @@ type UserInfo struct {
 	UID        string  `json:"uid"`
 	GrowthRate float64 `json:"growth_rate"`
 }
+
+type RewardDetail struct {
+	UserID              string  `json:"user_id"`
+	YesterdayBal        float64 `json:"yesterday_bal"`         // 昨日持币
+	TodayBal            float64 `json:"today_bal"`             // 今日持币
+	DestroyHashRate     float64 `json:"destroy_hash_rate"`     // 销毁算力
+	YesterdayGrowthRate float64 `json:"yesterday_growth_rate"` // 昨日增长率
+	GrowthRate          float64 `json:"growth_rate"`           // 今日增长率
+	BalanceHashRate     float64 `json:"balance_hash_rate"`     // 持币算力
+	InviteHashRate      float64 `json:"invite_hash_rate"`      // 邀请算力
+	BalanceReward       float64 `json:"balance_reward"`        // 持币奖励
+	InviteReward        float64 `json:"invite_reward"`         // 邀请奖励
+	ParentUID           string  `json:"parent_uid"`            // 邀请人
+	TeamHashRate        float64 `json:"team_hash_rate"`        // 区域算力
+}

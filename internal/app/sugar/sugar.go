@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"server-sugar-app/internal/app/group"
 	"strconv"
 	"strings"
 	"time"
 
+	"server-sugar-app/internal/app/group"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
 	"server-sugar-app/config"
 	"server-sugar-app/internal/dao"
 	"server-sugar-app/internal/db"
@@ -246,6 +248,52 @@ func calcReward() (err error) {
 	if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
 		return errors.Wrap(err, "notice IM server download reward file")
 	}
+
+	log.Info("start save reward detail")
+	t = time.Now()
+	tx, err = db.MysqlCli.Begin()
+	if err != nil {
+		return errors.Wrap(err, "tx begin")
+	}
+
+	rd := make([]model.RewardDetail, 0, 3000)
+	for user, detail := range rewardDetails {
+		r := model.RewardDetail{
+			UserID:              user,
+			YesterdayBal:        detail.YesterdayBal,
+			TodayBal:            detail.TodayBal,
+			DestroyHashRate:     detail.DestroyHashRate,
+			YesterdayGrowthRate: detail.YesterdayGrowthRate,
+			GrowthRate:          detail.GrowthRate,
+			BalanceHashRate:     detail.BalanceHashRate,
+			InviteHashRate:      detail.InviteHashRate,
+			BalanceReward:       detail.BalanceReward,
+			InviteReward:        detail.InviteReward,
+			ParentUID:           detail.ParentUID,
+			TeamHashRate:        detail.TeamHashRate,
+		}
+		rd = append(rd, r)
+
+		if len(rd) == 3000 {
+			err = dao.RewardDetail.CreateTx(tx, rd)
+			if err != nil {
+				tx.Rollback()
+				return errors.Wrap(err, "reward detail insert")
+			}
+			rd = make([]model.RewardDetail, 0, 3000)
+		}
+	}
+
+	if len(rd) > 0 {
+		err = dao.RewardDetail.CreateTx(tx, rd)
+		if err != nil {
+			tx.Rollback()
+			return errors.Wrap(err, "reward detail insert")
+		}
+	}
+	tx.Commit()
+	log.Infof("over save reward_detail, cost time: %v", time.Since(t))
+
 	return
 }
 
@@ -367,10 +415,10 @@ func destroyHashRates() (map[string]float64, error) {
 	// notice that userDestroyedAmount and merchantDestroyedAmount may has overlapped uid.
 	destroyHashRates := make(map[string]float64, len(userDestroyedAmount))
 	for _, u := range userDestroyedAmount {
-		destroyHashRates[u.UID] += u.Amount * 10
+		destroyHashRates[u.UID] += u.Credit
 	}
 	for _, merchant := range merchantDestroyedAmount {
-		destroyHashRates[merchant.UID] += merchant.Amount * 2
+		destroyHashRates[merchant.UID] += merchant.Credit
 	}
 
 	return destroyHashRates, nil

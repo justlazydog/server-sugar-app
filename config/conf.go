@@ -61,7 +61,7 @@ type sie struct {
 func Init() {
 	unmarshalServer()
 	unmarshalMysql()
-	unmarshalExchangeMysql()
+	//unmarshalExchangeMysql()
 	unmarshalSIE()
 }
 
@@ -98,7 +98,7 @@ func unmarshalMysql() {
 }
 
 func unmarshalExchangeMysql() {
-	viper.SetConfigName("exchange_mysql")
+	viper.SetConfigName("exchange_mysql.yml")
 	viper.AddConfigPath(confPath)
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file

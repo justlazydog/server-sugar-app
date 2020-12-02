@@ -120,14 +120,21 @@ func getUserLockSIEBalance(now time.Time) (yesterday map[string]float64, today m
 
 	var yesterdayFilePath string
 
-	lockedSIEs, err := dao.GetLockedSIE()
+	//lockedSIEs, err := dao.GetLockedSIE()
+	//if err != nil {
+	//	err = fmt.Errorf("GetLockedSIE failed: %v", err)
+	//	return
+	//}
+
+	lockedSIEs, _, err := util.ParseLockSIEFile("sugar/2020-12-02/lockSIE__202012011600.txt")
 	if err != nil {
 		err = fmt.Errorf("GetLockedSIE failed: %v", err)
 		return
 	}
+
 	today = make(map[string]float64)
-	for i := range lockedSIEs {
-		today[lockedSIEs[i].UID] = lockedSIEs[i].Volume
+	for k, v := range lockedSIEs {
+		today[k] = v
 	}
 
 	// 持久化今日数据
@@ -182,10 +189,10 @@ func calcReward() (err error) {
 		return fmt.Errorf("get destroyHashRates failed: %v", err)
 	}
 
-	lastSugar, err := dao.Sugar.GetLastRecord()
-	if err != nil {
-		return errors.Wrap(err, "get last sugar record")
-	}
+	//lastSugar, err := dao.Sugar.GetLastRecord()
+	//if err != nil {
+	//	return errors.Wrap(err, "get last sugar record")
+	//}
 
 	// 获取销毁SIE数量累计值
 	shopSIE, err := getUsedShopSIE()
@@ -206,13 +213,13 @@ func calcReward() (err error) {
 	}
 	go writeFile(accOutMap, 2)
 
-	curCurrency := lastSugar.RealCurrency - (sumBalanceOut - lastSugar.AccountOut) - (shopSIE - lastSugar.ShopSIE) - (sumBalanceIn - lastSugar.AccountIn)
+	//curCurrency := lastSugar.RealCurrency - (sumBalanceOut - lastSugar.AccountOut) - (shopSIE - lastSugar.ShopSIE) - (sumBalanceIn - lastSugar.AccountIn)
 
 	// 总发行量: 流通量的千分之一
-	totalIssuerAmount := curCurrency / 1000
+	totalIssuerAmount := 107359084.747998 / 1000
 	log.Infof("总发行量: %f", totalIssuerAmount)
 
-	curRealCurrency := curCurrency + totalIssuerAmount
+	curRealCurrency := 107359084.747998 + totalIssuerAmount
 
 	// make up user details
 	rewardDetails := make(map[string]*RewardDetail)
@@ -241,10 +248,10 @@ func calcReward() (err error) {
 
 	newSugar := model.Sugar{
 		Sugar:        totalIssuerAmount,
-		Currency:     curCurrency,
+		Currency:     107359084.747998,
 		RealCurrency: curRealCurrency,
 		ShopSIE:      shopSIE,
-		ShopUsedSIE:  shopSIE - lastSugar.ShopSIE,
+		ShopUsedSIE:  shopSIE - 6525980.4540349000000000,
 		AccountIn:    sumBalanceIn,
 		AccountOut:   sumBalanceOut,
 	}
@@ -291,26 +298,9 @@ func calcReward() (err error) {
 	tx.Commit()
 	log.Infof("over save user_reward, cost time: %v", time.Since(t))
 
-	// 生成奖励数据文件
-	rewardFiles, err := writeRewardFile(rewardDetails)
-	if err != nil {
-		return errors.Wrap(err, "write reward file")
-	}
-
-	// fmt.Println(rewardFiles)
-	// 通知IM下载文件
-	if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
-		return errors.Wrap(err, "notice IM server download reward file")
-	}
-
 	log.Info("start save reward detail")
 	t = time.Now()
-	tx, err = db.MysqlCli.Begin()
-	if err != nil {
-		return errors.Wrap(err, "tx begin")
-	}
-
-	rd := make([]model.RewardDetail, 0, 3000)
+	rd := make([]model.RewardDetail, 0)
 	for user, detail := range rewardDetails {
 		r := model.RewardDetail{
 			UserID:              user,
@@ -328,26 +318,34 @@ func calcReward() (err error) {
 		}
 		rd = append(rd, r)
 
-		if len(rd) == 3000 {
-			err = dao.RewardDetail.CreateTx(tx, rd)
+		if len(rd) == 500 {
+			err = dao.RewardDetail.CreateTx(rd)
 			if err != nil {
-				tx.Rollback()
 				return errors.Wrap(err, "reward detail insert")
 			}
-			rd = make([]model.RewardDetail, 0, 3000)
+			rd = make([]model.RewardDetail, 0)
 		}
 	}
 
 	if len(rd) > 0 {
-		err = dao.RewardDetail.CreateTx(tx, rd)
+		err = dao.RewardDetail.CreateTx(rd)
 		if err != nil {
-			tx.Rollback()
 			return errors.Wrap(err, "reward detail insert")
 		}
 	}
-	tx.Commit()
 	log.Infof("over save reward_detail, cost time: %v", time.Since(t))
 
+	// 生成奖励数据文件
+	rewardFiles, err := writeRewardFile(rewardDetails)
+	if err != nil {
+		return errors.Wrap(err, "write reward file")
+	}
+
+	// fmt.Println(rewardFiles)
+	// 通知IM下载文件
+	if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
+		return errors.Wrap(err, "notice IM server download reward file")
+	}
 	return
 }
 

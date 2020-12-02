@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -76,10 +77,10 @@ func UpdateGroupRelation() (err error) {
 	req.Header.Add("sign", fmt.Sprintf("%x", sign))
 	req.Header.Add("Content-Type", "application/json")
 
-	//proxyUrl, _ := url.Parse("http://127.0.0.1:1087")
+	proxyUrl, _ := url.Parse("http://127.0.0.1:1087")
 	client := &http.Client{
 		Transport: &http.Transport{
-			//Proxy:           http.ProxyURL(proxyUrl),
+			Proxy:           http.ProxyURL(proxyUrl),
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 		Timeout: 10 * time.Minute,

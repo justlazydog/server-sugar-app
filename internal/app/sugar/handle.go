@@ -3,6 +3,7 @@ package sugar
 import (
 	"fmt"
 	"net/http"
+	"server-sugar-app/internal/app/warn"
 	"sync"
 	"time"
 
@@ -97,9 +98,14 @@ func ReceiveCalcFile(c *gin.Context) {
 				calcSugar.files = []string{}
 				calcSugar.sourceFileName = []string{}
 			}()
-			err = calcReward()
+			now := time.Now()
+			err = warn.Must("prepare sugar", prepare(now))
 			if err != nil {
-				log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
+				return
+			}
+
+			err = warn.Must("calc sugar", calcReward(now))
+			if err != nil {
 				return
 			}
 		}()

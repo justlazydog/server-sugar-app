@@ -71,6 +71,35 @@ func ParseCompressAccountFile(filename string) (m map[string]float64, sumBalance
 	return
 }
 
+func ParseAccountInOutFile(filename string) (val float64, err error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		err = fmt.Errorf("open file %s failed: %v", filename, err)
+		return
+	}
+	r := bufio.NewReader(f)
+
+	for {
+		line, _, err := r.ReadLine()
+		if err == nil {
+			bs := bytes.Split(line, []byte(","))
+			if len(bs) == 2 && len(bs[0]) > 0 && len(bs[1]) > 0 {
+				val, err = strconv.ParseFloat(string(bytes.TrimSpace(bs[1])), 64)
+				if err != nil {
+					err = errors.Wrap(err, "parse string to float")
+					return
+				}
+			} else {
+				err = fmt.Errorf("bad account file format %s", string(line))
+				return
+			}
+		} else {
+			err = errors.Wrap(err, "read line")
+			return
+		}
+	}
+}
+
 func ParseLockSIEFile(filename string) (m map[string]float64, sumBalance float64, err error) {
 
 	f, err := os.Open(filename)

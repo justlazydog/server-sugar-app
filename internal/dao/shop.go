@@ -178,7 +178,7 @@ select
 from 
 	shop_user 
 where 
-	created_at > ? and created_at < '2020-12-01 16:00:00'
+	created_at > ? and created_at < '2020-12-02 16:00:00'
 group by
 	uid`, beginAt)
 	if err != nil {
@@ -387,7 +387,7 @@ select
 from
 	shop_boss 
 where
-	created_at > ? and created_at < '2020-12-01 16:00:00'
+	created_at > ? and created_at < '2020-12-02 16:00:00'
 group by uid`, beginAt)
 
 	if err != nil {

@@ -53,6 +53,9 @@ func RunHttp() {
 		c.JSON(200, lockedSIE)
 	})
 
+	admin := r.Group("/admin")
+	admin.POST("/prepare/:prepare", sugar.Prepare)
+
 	srv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port),
 		Handler: r,

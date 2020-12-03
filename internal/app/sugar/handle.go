@@ -158,6 +158,15 @@ func GetUserRewardDetail(c *gin.Context) {
 	}{200, "success", res})
 }
 
+func Prepare(c *gin.Context) {
+	prepare := c.Param("prepare")
+	switch prepare {
+	case "locksie":
+	default:
+		c.JSON(http.StatusBadRequest, "unknown prepare")
+	}
+}
+
 //func ManualStart(c *gin.Context) {
 //	req := struct {
 //		Filenames   []string `form:"filenames" binding:"required"`

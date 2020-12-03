@@ -310,7 +310,7 @@ func calcReward() (err error) {
 		return errors.Wrap(err, "tx begin")
 	}
 
-	rd := make([]model.RewardDetail, 0, 3000)
+	rd := make([]model.RewardDetail, 0, 500)
 	for user, detail := range rewardDetails {
 		r := model.RewardDetail{
 			UserID:              user,
@@ -328,13 +328,13 @@ func calcReward() (err error) {
 		}
 		rd = append(rd, r)
 
-		if len(rd) == 3000 {
+		if len(rd) > 499 {
 			err = dao.RewardDetail.CreateTx(tx, rd)
 			if err != nil {
 				tx.Rollback()
 				return errors.Wrap(err, "reward detail insert")
 			}
-			rd = make([]model.RewardDetail, 0, 3000)
+			rd = make([]model.RewardDetail, 0, 500)
 		}
 	}
 

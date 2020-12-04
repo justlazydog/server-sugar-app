@@ -175,7 +175,6 @@ func Prepare(c *gin.Context) {
 			return
 		}
 		writeFile(accInMap, 1)
-		return
 	case "account_out":
 		sie := config.SIE
 		accOutMap, _, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 2)
@@ -184,7 +183,8 @@ func Prepare(c *gin.Context) {
 			return
 		}
 		writeFile(accOutMap, 2)
-		return
+	case "relation": // update relation
+		group.GetLatestGroupRela()
 	default:
 		c.JSON(http.StatusBadRequest, "unknown prepare")
 		return
@@ -210,7 +210,7 @@ func ManualStart(c *gin.Context) {
 	go group.GetLatestGroupRela()
 
 	go func() {
-		err = calcReward()
+		err = calcReward(time.Now())
 		if err != nil {
 			log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
 			return

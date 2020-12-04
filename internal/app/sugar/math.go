@@ -79,9 +79,9 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 				υ	此时该用户持币算力中的的持币部分（用户持币量*增长率），得到的算力，自动计算到特殊账号内*/
 			d.PureBalanceHashRate = d.TodayBal * d.GrowthRate
 			if d.TodayBal >= 100 {
-				d.BalanceHashRate = d.PureBalanceHashRate + d.DestroyHashRate
+				d.BalanceHashRate += d.PureBalanceHashRate + d.DestroyHashRate
 			} else {
-				d.BalanceHashRate = d.DestroyHashRate
+				d.BalanceHashRate += d.DestroyHashRate
 				details[sie.SIERewardAccount].BalanceHashRate += d.PureBalanceHashRate // 持币部分分配给系统帐号
 			}
 			d.BalanceHashRateView = d.PureBalanceHashRate + d.DestroyHashRate // 显示给用户看的

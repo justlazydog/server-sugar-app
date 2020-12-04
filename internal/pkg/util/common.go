@@ -87,15 +87,15 @@ func ParseAccountInOutFile(filename string) (val float64, err error) {
 				val, err = strconv.ParseFloat(string(bytes.TrimSpace(bs[1])), 64)
 				if err != nil {
 					err = errors.Wrap(err, "parse string to float")
-					return
+					return val, err
 				}
 			} else {
 				err = fmt.Errorf("bad account file format %s", string(line))
-				return
+				return val, err
 			}
 		} else {
 			err = errors.Wrap(err, "read line")
-			return
+			return val, err
 		}
 	}
 }

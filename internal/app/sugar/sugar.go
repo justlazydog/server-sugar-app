@@ -57,7 +57,7 @@ func StartSugar() {
 }
 
 // 计算糖果奖励前的准备工作
-func prepare(now time.Time) error {
+func prepare() error {
 	if err := persistLockSIE(); err != nil {
 		return fmt.Errorf("persistLockSIE failed: %v", err)
 	}

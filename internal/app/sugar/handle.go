@@ -3,6 +3,7 @@ package sugar
 import (
 	"fmt"
 	"net/http"
+	"server-sugar-app/internal/app/group"
 	"server-sugar-app/internal/app/warn"
 	"sync"
 	"time"
@@ -99,7 +100,7 @@ func ReceiveCalcFile(c *gin.Context) {
 				calcSugar.sourceFileName = []string{}
 			}()
 			now := time.Now()
-			err = warn.Must("prepare sugar", prepare(now))
+			err = warn.Must("prepare sugar", prepare())
 			if err != nil {
 				return
 			}
@@ -161,43 +162,67 @@ func GetUserRewardDetail(c *gin.Context) {
 func Prepare(c *gin.Context) {
 	prepare := c.Param("prepare")
 	switch prepare {
-	case "locksie":
+	case "lock_sie":
+		if err := persistLockSIE(); err != nil {
+			c.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+	case "account_in":
+		sie := config.SIE
+		accInMap, _, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, fmt.Errorf("get account balance in failed: %v", err))
+			return
+		}
+		writeFile(accInMap, 1)
+		return
+	case "account_out":
+		sie := config.SIE
+		accOutMap, _, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 2)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, fmt.Errorf("get account balance out failed: %v", err))
+			return
+		}
+		writeFile(accOutMap, 2)
+		return
 	default:
 		c.JSON(http.StatusBadRequest, "unknown prepare")
+		return
 	}
+	c.JSON(http.StatusOK, "ok")
 }
 
-//func ManualStart(c *gin.Context) {
-//	req := struct {
-//		Filenames   []string `form:"filenames" binding:"required"`
-//		CurFilePath string   `form:"cur_file_path" binding:"required"`
-//	}{}
-//
-//	err := c.ShouldBind(&req)
-//	if err != nil {
-//		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
-//		c.JSON(http.StatusBadRequest, generr.ParseParam)
-//		return
-//	}
-//
-//	curFilePath = req.CurFilePath
-//
-//	go group.GetLatestGroupRela()
-//
-//	go func() {
-//		err = calcReward()
-//		if err != nil {
-//			log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
-//			return
-//		}
-//	}()
-//
-//	c.JSON(http.StatusOK, struct {
-//		Code int    `json:"code"`
-//		Msg  string `json:"msg"`
-//	}{Code: 200, Msg: "success"})
-//	return
-//}
+func ManualStart(c *gin.Context) {
+	req := struct {
+		Filenames   []string `form:"filenames" binding:"required"`
+		CurFilePath string   `form:"cur_file_path" binding:"required"`
+	}{}
+
+	err := c.ShouldBind(&req)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	curFilePath = req.CurFilePath
+
+	go group.GetLatestGroupRela()
+
+	go func() {
+		err = calcReward()
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
+			return
+		}
+	}()
+
+	c.JSON(http.StatusOK, struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+	}{Code: 200, Msg: "success"})
+	return
+}
 
 func checkFile(filename string) bool {
 	sie := config.SIE

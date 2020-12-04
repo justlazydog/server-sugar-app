@@ -335,5 +335,5 @@ func isInWhiteList(uid string) bool {
 func safeDiv(f1, f2 float64) (float64, bool) {
 	d1 := decimal.NewFromFloat(f1)
 	d2 := decimal.NewFromFloat(f2)
-	return d1.Div(d2).Float64()
+	return d1.DivRound(d2, 10).Float64()
 }

@@ -273,14 +273,14 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 		}
 		details[uid] = detail
 	}
-	teamBalHashRate = detail.BalanceHashRate
+	teamBalHashRate = detail.BalanceHashRateView
 	for _, user := range users {
 		if !isInWhiteList(user) {
 			var curProperty float64
 			detail, ok := details[user]
 			if ok {
-				curProperty = detail.BalanceHashRate
-				teamBalHashRate += detail.BalanceHashRate
+				curProperty = detail.BalanceHashRateView
+				teamBalHashRate += detail.BalanceHashRateView
 			}
 			m := make(map[string]bool)
 			subUsers, err := group.GetAllDownLineUsers(user, m)
@@ -292,8 +292,8 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 				if !isInWhiteList(v) {
 					detail, ok := details[v]
 					if ok {
-						curProperty += detail.BalanceHashRate
-						teamBalHashRate += detail.BalanceHashRate
+						curProperty += detail.BalanceHashRateView
+						teamBalHashRate += detail.BalanceHashRateView
 					}
 				}
 			}

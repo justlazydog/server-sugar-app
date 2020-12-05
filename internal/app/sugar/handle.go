@@ -105,7 +105,7 @@ func ReceiveCalcFile(c *gin.Context) {
 				return
 			}
 
-			err = warn.Must("calc sugar", calcReward(now))
+			err = warn.Must("calc sugar", CalcReward(now))
 			if err != nil {
 				return
 			}
@@ -210,7 +210,7 @@ func ManualStart(c *gin.Context) {
 	go group.GetLatestGroupRela()
 
 	go func() {
-		err = calcReward(time.Now())
+		err = CalcReward(time.Now())
 		if err != nil {
 			log.Errorf("err: %+v", errors.Wrap(err, "calc sugar reward"))
 			return

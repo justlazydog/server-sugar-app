@@ -79,7 +79,7 @@ func prepare() error {
 }
 
 // 计算糖果奖励
-func calcReward(now time.Time) (err error) {
+func CalcReward(now time.Time) (err error) {
 	// 获取用户昨日增长率
 	yesterdayGrowthRate := getUserYesterdayGrowthRate(now)
 

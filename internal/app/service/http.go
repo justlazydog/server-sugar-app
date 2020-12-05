@@ -61,30 +61,29 @@ func RunHttp() {
 			}
 			c.String(http.StatusOK, updated)
 		})
-	} else { // online biz
-		shopGroup := r.Group("/shop")
-		shopGroup.PUT("/order", shop.Put)
-		shopGroup.GET("/user/credit", shop.GetUserCredit)
-		shopGroup.GET("/user/credit/all", shop.GetAllUserCredit)
-		shopGroup.GET("/user/credit/detail", shop.GetUserCreditDetail)
-		shopGroup.GET("/used", shop.GetUsedAmount)
-		shopGroup.GET("/boss/amount", shop.GetBossAmount)
-		shopGroup.GET("/boss/credit", shop.GetBossCredit)
-		shopGroup.GET("/boss/credit/detail", shop.GetBossCreditDetail)
-		shopGroup.GET("/boss/credit/list", shop.ListBossCredit)
-		shopGroup.GET("/boss/credit/detail/list", shop.ListBossCreditDetail)
-
-		sugarGroup := r.Group("/sugar")
-		sugarGroup.POST("/upload/:token/:filename", sugar.ReceiveCalcFile)
-		sugarGroup.GET("/download/:filename", sugar.DownloadRewardFile)
-		sugarGroup.GET("/reward_detail", sugar.GetUserRewardDetail)
-		//sugarGroup.POST("/start/manual", sugar.ManualStart)
-
-		outGroup := r.Group("/out")
-		outGroup.Use(middleware.ValidateSign)
-		outGroup.PUT("/order", out.Put)
-		outGroup.GET("/amount", out.GetUserSumDestructAmount)
 	}
+	shopGroup := r.Group("/shop")
+	shopGroup.PUT("/order", shop.Put)
+	shopGroup.GET("/user/credit", shop.GetUserCredit)
+	shopGroup.GET("/user/credit/all", shop.GetAllUserCredit)
+	shopGroup.GET("/user/credit/detail", shop.GetUserCreditDetail)
+	shopGroup.GET("/used", shop.GetUsedAmount)
+	shopGroup.GET("/boss/amount", shop.GetBossAmount)
+	shopGroup.GET("/boss/credit", shop.GetBossCredit)
+	shopGroup.GET("/boss/credit/detail", shop.GetBossCreditDetail)
+	shopGroup.GET("/boss/credit/list", shop.ListBossCredit)
+	shopGroup.GET("/boss/credit/detail/list", shop.ListBossCreditDetail)
+
+	sugarGroup := r.Group("/sugar")
+	sugarGroup.POST("/upload/:token/:filename", sugar.ReceiveCalcFile)
+	sugarGroup.GET("/download/:filename", sugar.DownloadRewardFile)
+	sugarGroup.GET("/reward_detail", sugar.GetUserRewardDetail)
+	//sugarGroup.POST("/start/manual", sugar.ManualStart)
+
+	outGroup := r.Group("/out")
+	outGroup.Use(middleware.ValidateSign)
+	outGroup.PUT("/order", out.Put)
+	outGroup.GET("/amount", out.GetUserSumDestructAmount)
 
 	srv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%s", config.Server.Host, config.Server.Port),

@@ -175,15 +175,6 @@ func calculateGrowthRate(d *RewardDetail) {
 func rewardTwo(details map[string]*RewardDetail, sumAmount float64) error {
 	log.Info("start calc reward two...")
 	t := time.Now()
-	group.Cond.L.Lock()
-	for !group.RelateUpdated {
-		group.Cond.Wait()
-	}
-	group.Cond.L.Unlock()
-
-	if group.StopCalc {
-		return errors.New("received relation update stop signal")
-	}
 
 	var allMinorForce, allForce float64
 	uForeM := make(map[string]float64) // 用于持币大于100的用户算力（实际发送奖励者)

@@ -89,6 +89,7 @@ func ParseAccountInOutFile(filename string) (val float64, err error) {
 					err = errors.Wrap(err, "parse string to float")
 					return val, err
 				}
+				return val, nil
 			} else {
 				err = fmt.Errorf("bad account file format %s", string(line))
 				return val, err

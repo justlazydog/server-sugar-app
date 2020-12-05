@@ -37,17 +37,29 @@ func RunHttp() {
 
 		admin.POST("/sugar/start", func(c *gin.Context) {
 			go func() {
-				group.GetLatestGroupRela()
+				skipRela := c.Query("skip_rela")
+				if skipRela == "" {
+					group.GetLatestGroupRela()
+				}
 				sugar.StartSugar()
 			}()
-			c.String(http.StatusOK, "ok")
 		})
 
 		admin.POST("/sugar/calc", func(c *gin.Context) {
 			go func() {
-				sugar.CalcReward(time.Now())
+				if err := sugar.CalcReward(time.Now()); err != nil {
+					log.Errorf("CalcReward failed: %v", err.Error())
+				}
 			}()
 			c.String(http.StatusOK, "ok")
+		})
+
+		admin.GET("/relation/updated", func(c *gin.Context) {
+			updated := "false"
+			if group.RelateUpdated {
+				updated = "true"
+			}
+			c.String(http.StatusOK, updated)
 		})
 	} else { // online biz
 		shopGroup := r.Group("/shop")

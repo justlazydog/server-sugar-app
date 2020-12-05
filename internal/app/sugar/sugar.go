@@ -80,6 +80,19 @@ func prepare() error {
 
 // 计算糖果奖励
 func CalcReward(now time.Time) (err error) {
+	dirname := now.Format("2006-01-02") + "/"
+	curFilePath = "sugar/" + dirname
+
+	group.Cond.L.Lock()
+	for !group.RelateUpdated {
+		group.Cond.Wait()
+	}
+	group.Cond.L.Unlock()
+
+	if group.StopCalc {
+		return errors.New("received relation update stop signal")
+	}
+
 	// 获取用户昨日增长率
 	yesterdayGrowthRate := getUserYesterdayGrowthRate(now)
 
@@ -217,9 +230,11 @@ func CalcReward(now time.Time) (err error) {
 
 	// fmt.Println(rewardFiles)
 	// 通知IM下载文件
-	if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
-		return errors.Wrap(err, "notice IM server download reward file")
-	}
+	go func() {
+		if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
+			log.Error(errors.Wrap(err, "notice IM server download reward file").Error())
+		}
+	}()
 
 	log.Info("start save reward detail")
 	t = time.Now()

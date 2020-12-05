@@ -174,6 +174,8 @@ func Prepare(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, fmt.Errorf("get account balance in failed: %v", err))
 			return
 		}
+		dirname := time.Now().Format("2006-01-02") + "/"
+		curFilePath = "sugar/" + dirname
 		writeFile(accInMap, 1)
 	case "account_out":
 		sie := config.SIE
@@ -182,9 +184,11 @@ func Prepare(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, fmt.Errorf("get account balance out failed: %v", err))
 			return
 		}
+		dirname := time.Now().Format("2006-01-02") + "/"
+		curFilePath = "sugar/" + dirname
 		writeFile(accOutMap, 2)
 	case "relation": // update relation
-		group.GetLatestGroupRela()
+		go group.GetLatestGroupRela()
 	default:
 		c.JSON(http.StatusBadRequest, "unknown prepare")
 		return

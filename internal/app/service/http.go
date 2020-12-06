@@ -54,6 +54,22 @@ func RunHttp() {
 			c.String(http.StatusOK, "ok")
 		})
 
+		admin.POST("/sugar/rewardDetail", func(c *gin.Context) {
+			go func() {
+				path := c.Query("path")
+				detail, err := sugar.ParseRewardDetail(path)
+				if err != nil {
+					log.Error("ParseRewardDetail failed: %v", err)
+					return
+				}
+				if err := sugar.SaveRewardDetail(detail); err != nil {
+					log.Error("SaveRewardDetail failed: %v", err)
+					return
+				}
+			}()
+			c.String(http.StatusOK, "ok")
+		})
+
 		admin.GET("/relation/updated", func(c *gin.Context) {
 			updated := "false"
 			if group.RelateUpdated {

@@ -1,9 +1,13 @@
 package sugar
 
 import (
+	"archive/zip"
+	"bufio"
+	"bytes"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"strconv"
@@ -238,13 +242,18 @@ func CalcReward(now time.Time) (err error) {
 
 	log.Info("start save reward detail")
 	t = time.Now()
-	tx, err = db.MysqlCli.Begin()
-	if err != nil {
-		return errors.Wrap(err, "tx begin")
-	}
 
+	if err := SaveRewardDetail(rewardDetails); err != nil {
+		return fmt.Errorf("SaveRewardDetail failed: %v", err)
+	}
+	log.Infof("over save reward_detail, cost time: %v", time.Since(t))
+
+	return
+}
+
+func SaveRewardDetail(details map[string]*RewardDetail) error {
 	rd := make([]model.RewardDetail, 0, 500)
-	for user, detail := range rewardDetails {
+	for user, detail := range details {
 		r := model.RewardDetail{
 			UserID:              user,
 			YesterdayBal:        detail.YesterdayBal,
@@ -262,9 +271,8 @@ func CalcReward(now time.Time) (err error) {
 		rd = append(rd, r)
 
 		if len(rd) > 499 {
-			err = dao.RewardDetail.CreateTx(tx, rd)
+			err := dao.RewardDetail.Create(rd)
 			if err != nil {
-				tx.Rollback()
 				return errors.Wrap(err, "reward detail insert")
 			}
 			rd = make([]model.RewardDetail, 0, 500)
@@ -272,16 +280,12 @@ func CalcReward(now time.Time) (err error) {
 	}
 
 	if len(rd) > 0 {
-		err = dao.RewardDetail.CreateTx(tx, rd)
+		err := dao.RewardDetail.Create(rd)
 		if err != nil {
-			tx.Rollback()
 			return errors.Wrap(err, "reward detail insert")
 		}
 	}
-	tx.Commit()
-	log.Infof("over save reward_detail, cost time: %v", time.Since(t))
-
-	return
+	return nil
 }
 
 func getUserYesterdayGrowthRate(now time.Time) map[string]float64 {
@@ -534,4 +538,71 @@ func getFilePath(dirPath, filePrefix string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("could not found file with [%s] prefix", filePrefix)
+}
+
+func ParseRewardDetail(path string) (map[string]*RewardDetail, error) {
+	rc, err := zip.OpenReader(path)
+	if err != nil {
+		err = errors.Wrap(err, "open zip file reader")
+		return nil, err
+	}
+	defer rc.Close()
+
+	if len(rc.Reader.File) == 0 || rc.Reader.File[0] == nil {
+		err = errors.New("empty zip file")
+		return nil, err
+	}
+	f, err := rc.Reader.File[0].Open()
+	if err != nil {
+		err = errors.Wrap(err, "open zip file")
+		return nil, err
+	}
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	details := make(map[string]*RewardDetail)
+	for {
+		line, _, err := r.ReadLine()
+		if err == nil {
+			bs := bytes.Split(line, []byte(","))
+			if len(bs) == 14 {
+				uid := string(bs[0])
+				yesterdayBal, _ := strconv.ParseFloat(string(bs[1]), 64)
+				todayBal, _ := strconv.ParseFloat(string(bs[2]), 64)
+				destroyHashRate, _ := strconv.ParseFloat(string(bs[3]), 64)
+				yesterdayGrowthRate, _ := strconv.ParseFloat(string(bs[4]), 64)
+				growthRate, _ := strconv.ParseFloat(string(bs[5]), 64)
+				balanceHashRate, _ := strconv.ParseFloat(string(bs[7]), 64)
+				inviteHashRate, _ := strconv.ParseFloat(string(bs[9]), 64)
+				balanceReward, _ := strconv.ParseFloat(string(bs[10]), 64)
+				inviteReward, _ := strconv.ParseFloat(string(bs[11]), 64)
+				teamHashRate, _ := strconv.ParseFloat(string(bs[12]), 64)
+				parentUID := string(bs[13])
+
+				rewardDetail := RewardDetail{
+					YesterdayBal:        yesterdayBal,
+					TodayBal:            todayBal,
+					DestroyHashRate:     destroyHashRate,
+					YesterdayGrowthRate: yesterdayGrowthRate,
+					GrowthRate:          growthRate,
+					BalanceHashRate:     balanceHashRate,
+					InviteHashRate:      inviteHashRate,
+					BalanceReward:       balanceReward,
+					InviteReward:        inviteReward,
+					ParentUID:           parentUID,
+					TeamHashRate:        teamHashRate,
+				}
+
+				details[uid] = &rewardDetail
+			} else {
+				return details, err
+			}
+		} else if err == io.EOF {
+			break
+		} else {
+			err = errors.Wrap(err, "read line")
+			return details, err
+		}
+	}
+	return details, nil
 }

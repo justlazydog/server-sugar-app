@@ -252,7 +252,7 @@ func CalcReward(now time.Time) (err error) {
 }
 
 func SaveRewardDetail(details map[string]*RewardDetail) error {
-	rd := make([]model.RewardDetail, 0, 500)
+	rd := make([]model.RewardDetail, 0, 300)
 	for user, detail := range details {
 		r := model.RewardDetail{
 			UserID:              user,
@@ -270,12 +270,12 @@ func SaveRewardDetail(details map[string]*RewardDetail) error {
 		}
 		rd = append(rd, r)
 
-		if len(rd) > 499 {
+		if len(rd) > 299 {
 			err := dao.RewardDetail.Create(rd)
 			if err != nil {
-				return errors.Wrap(err, "reward detail insert")
+				log.Errorf("reward detail insert failed: %v", err)
 			}
-			rd = make([]model.RewardDetail, 0, 500)
+			rd = make([]model.RewardDetail, 0, 300)
 		}
 	}
 

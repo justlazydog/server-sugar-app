@@ -145,6 +145,7 @@ func (*rewardDetail) Get(userID string) (res model.RewardDetail, err error) {
 	var createTime string
 	err = row.Scan(&createTime, &res.TodayBal, &res.GrowthRate, &res.BalanceHashRate, &res.InviteHashRate)
 	if err == sql.ErrNoRows {
+		res.CreateTime = time.Now()
 		return res, nil
 	}
 

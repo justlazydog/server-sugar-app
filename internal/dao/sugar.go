@@ -138,10 +138,14 @@ func (*rewardDetail) Create(data []model.RewardDetail) error {
 }
 
 func (*rewardDetail) Get(userID string) (res model.RewardDetail, err error) {
-	t := time.Now().Add(-24 * time.Hour)
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	t := time.Now().In(loc)
+	str := t.Format("2006-01-02") + " 00:00:00"
+	t, _ = time.ParseInLocation("2006-01-02 15:04:05", str, loc)
+
 	sqlStr := "select create_time,today_bal,growth_rate,balance_hash_rate,invite_hash_rate from reward_detail where " +
-		"user_id = ? and date(create_time) >= date(?) order by id desc limit 1"
-	row := db.MysqlCli.QueryRow(sqlStr, t, userID)
+		"user_id = ? and create_time >= ? order by id desc limit 1"
+	row := db.MysqlCli.QueryRow(sqlStr, userID, t.In(time.Local))
 	var createTime string
 	err = row.Scan(&createTime, &res.TodayBal, &res.GrowthRate, &res.BalanceHashRate, &res.InviteHashRate)
 	if err == sql.ErrNoRows {

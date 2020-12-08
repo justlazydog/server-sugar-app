@@ -9,6 +9,9 @@ import (
 )
 
 func SugarTicker() {
+	if !config.Server.IsJobServer {
+		return
+	}
 	c := cron.New()
 	sieCfg := config.SIE
 	_ = c.AddFunc(sieCfg.SIESchedule, sugar.StartSugar)

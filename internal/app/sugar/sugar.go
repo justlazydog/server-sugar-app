@@ -1,9 +1,13 @@
 package sugar
 
 import (
+	"archive/zip"
+	"bufio"
+	"bytes"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"strconv"
@@ -56,105 +60,43 @@ func StartSugar() {
 	}
 }
 
-func getFilePath(dirPath, filePrefix string) (string, error) {
-	dir, err := os.Open(dirPath)
+// 计算糖果奖励前的准备工作
+func prepare() error {
+	if err := persistLockSIE(); err != nil {
+		return fmt.Errorf("persistLockSIE failed: %v", err)
+	}
+
+	sie := config.SIE
+	accInMap, _, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
 	if err != nil {
-		return "", err
+		return errors.Wrap(err, "get account balance in")
 	}
-	fInfos, err := dir.Readdir(0)
+	writeFile(accInMap, 1)
+
+	accOutMap, _, err := getAccountsBalanceInOrOut(sie.SIESubAccounts, 2)
 	if err != nil {
-		return "", err
+		return errors.Wrap(err, "get account balance out")
 	}
+	writeFile(accOutMap, 2)
 
-	for i := range fInfos {
-		fName := fInfos[i].Name()
-		if strings.HasPrefix(fName, filePrefix) {
-			return dirPath + "/" + fName, nil
-		}
-	}
-	return "", fmt.Errorf("could not found file with [%s] prefix", filePrefix)
-}
-
-func getUserYesterdayGrowthRate(now time.Time) map[string]float64 {
-	yesterdayDirPath := "sugar/" + now.Add(-24*time.Hour).Format("2006-01-02")
-
-	growthRateFilePath, err := getFilePath(yesterdayDirPath, "growth_rate_")
-	if err != nil {
-		return nil
-	}
-
-	userGrowthRates, err := util.ParseGrowthRateFile(growthRateFilePath)
-	if err != nil {
-		log.Errorf("parse growth rate file failed: %v", err)
-		return nil
-	}
-	return userGrowthRates
-}
-
-// 获取用户昨天和今天的sie持币量
-func getUserSIEBalance(now time.Time) (yesterday map[string]float64, today map[string]float64, err error) {
-	todayDirPath := "sugar/" + now.Format("2006-01-02")
-	yesterdayDirPath := "sugar/" + now.Add(-24*time.Hour).Format("2006-01-02")
-
-	filePrefix := "property_"
-
-	var todayFilePath, yesterdayFilePath string
-	todayFilePath, err = getFilePath(todayDirPath, filePrefix)
-	if err != nil {
-		return
-	}
-	yesterdayFilePath, err = getFilePath(yesterdayDirPath, filePrefix)
-	if err != nil {
-		return
-	}
-	today, _, err = util.ParseCompressAccountFile(todayFilePath)
-	yesterday, _, err = util.ParseCompressAccountFile(yesterdayFilePath)
-	return
-}
-
-// 获取用户昨天和今天的sie冻结量
-func getUserLockSIEBalance(now time.Time) (yesterday map[string]float64, today map[string]float64, err error) {
-	yesterdayDirPath := "sugar/" + now.Add(-24*time.Hour).Format("2006-01-02")
-
-	filePrefix := "lockSIE_"
-
-	var yesterdayFilePath string
-
-	lockedSIEs, err := dao.GetLockedSIE()
-	if err != nil {
-		err = fmt.Errorf("GetLockedSIE failed: %v", err)
-		return
-	}
-	today = make(map[string]float64)
-	for i := range lockedSIEs {
-		today[lockedSIEs[i].UID] = lockedSIEs[i].Volume
-	}
-
-	// 持久化今日数据
-	_, err = writeLockSIEFile(today)
-	if err != nil {
-		err = fmt.Errorf("writeLockSIEFile failed: %v", err)
-		return
-	}
-
-	hasYesterday := false
-	yesterdayFilePath, err = getFilePath(yesterdayDirPath, filePrefix)
-	if err == nil {
-		hasYesterday = true
-	} else {
-		log.Warnf(err.Error())
-		err = nil
-	}
-
-	if hasYesterday {
-		yesterday, _, err = util.ParseLockSIEFile(yesterdayFilePath)
-	}
-	return
+	return nil
 }
 
 // 计算糖果奖励
-func calcReward() (err error) {
-	now := time.Now()
+func CalcReward(now time.Time) (err error) {
+	dirname := now.Format("2006-01-02") + "/"
+	curFilePath = "sugar/" + dirname
+
+	group.Cond.L.Lock()
+	for !group.RelateUpdated {
+		group.Cond.Wait()
+	}
+	group.Cond.L.Unlock()
+
+	if group.StopCalc {
+		return errors.New("received relation update stop signal")
+	}
+
 	// 获取用户昨日增长率
 	yesterdayGrowthRate := getUserYesterdayGrowthRate(now)
 
@@ -193,18 +135,11 @@ func calcReward() (err error) {
 		return errors.Wrap(err, "get used shop sie amount")
 	}
 
-	sie := config.SIE
-	accInMap, sumBalanceIn, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
+	// read account in and out
+	sumBalanceIn, sumBalanceOut, err := getAccountInAndOut(now)
 	if err != nil {
-		return errors.Wrap(err, "get account balance in or out")
+		return errors.Wrap(err, "getAccountInAndOut")
 	}
-	go writeFile(accInMap, 1)
-
-	accOutMap, sumBalanceOut, err := getAccountsBalanceInOrOut(sie.SIESubAccounts, 2)
-	if err != nil {
-		return errors.Wrap(err, "get account balance in or out")
-	}
-	go writeFile(accOutMap, 2)
 
 	curCurrency := lastSugar.RealCurrency - (sumBalanceOut - lastSugar.AccountOut) - (shopSIE - lastSugar.ShopSIE) - (sumBalanceIn - lastSugar.AccountIn)
 
@@ -299,19 +234,26 @@ func calcReward() (err error) {
 
 	// fmt.Println(rewardFiles)
 	// 通知IM下载文件
-	if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
-		return errors.Wrap(err, "notice IM server download reward file")
-	}
+	go func() {
+		if err := noticeIMDownloadRewardFile(rewardFiles); err != nil {
+			log.Error(errors.Wrap(err, "notice IM server download reward file").Error())
+		}
+	}()
 
 	log.Info("start save reward detail")
 	t = time.Now()
-	tx, err = db.MysqlCli.Begin()
-	if err != nil {
-		return errors.Wrap(err, "tx begin")
-	}
 
-	rd := make([]model.RewardDetail, 0, 500)
-	for user, detail := range rewardDetails {
+	if err := SaveRewardDetail(rewardDetails); err != nil {
+		return fmt.Errorf("SaveRewardDetail failed: %v", err)
+	}
+	log.Infof("over save reward_detail, cost time: %v", time.Since(t))
+
+	return
+}
+
+func SaveRewardDetail(details map[string]*RewardDetail) error {
+	rd := make([]model.RewardDetail, 0, 300)
+	for user, detail := range details {
 		r := model.RewardDetail{
 			UserID:              user,
 			YesterdayBal:        detail.YesterdayBal,
@@ -328,26 +270,136 @@ func calcReward() (err error) {
 		}
 		rd = append(rd, r)
 
-		if len(rd) > 499 {
-			err = dao.RewardDetail.CreateTx(tx, rd)
+		if len(rd) > 299 {
+			err := dao.RewardDetail.Create(rd)
 			if err != nil {
-				tx.Rollback()
-				return errors.Wrap(err, "reward detail insert")
+				log.Errorf("reward detail insert failed: %v", err)
 			}
-			rd = make([]model.RewardDetail, 0, 500)
+			rd = make([]model.RewardDetail, 0, 300)
 		}
 	}
 
 	if len(rd) > 0 {
-		err = dao.RewardDetail.CreateTx(tx, rd)
+		err := dao.RewardDetail.Create(rd)
 		if err != nil {
-			tx.Rollback()
 			return errors.Wrap(err, "reward detail insert")
 		}
 	}
-	tx.Commit()
-	log.Infof("over save reward_detail, cost time: %v", time.Since(t))
+	return nil
+}
 
+func getUserYesterdayGrowthRate(now time.Time) map[string]float64 {
+	yesterdayDirPath := "sugar/" + now.Add(-24*time.Hour).Format("2006-01-02")
+
+	growthRateFilePath, err := getFilePath(yesterdayDirPath, "growth_rate_")
+	if err != nil {
+		return nil
+	}
+
+	userGrowthRates, err := util.ParseGrowthRateFile(growthRateFilePath)
+	if err != nil {
+		log.Errorf("parse growth rate file failed: %v", err)
+		return nil
+	}
+	return userGrowthRates
+}
+
+// 持久化冻结sie数据
+func persistLockSIE() error {
+	lockedSIEs, err := dao.GetLockedSIE()
+	if err != nil {
+		return fmt.Errorf("GetLockedSIE failed: %v", err)
+	}
+	today := make(map[string]float64)
+	for i := range lockedSIEs {
+		today[lockedSIEs[i].UID] = lockedSIEs[i].Volume
+	}
+
+	// 持久化今日数据
+	_, err = writeLockSIEFile(today)
+	if err != nil {
+		return fmt.Errorf("writeLockSIEFile failed: %v", err)
+	}
+	return nil
+}
+
+// 获取用户昨天和今天的sie持币量
+func getUserSIEBalance(now time.Time) (yesterday map[string]float64, today map[string]float64, err error) {
+	todayDirPath := "sugar/" + now.Format("2006-01-02")
+	yesterdayDirPath := "sugar/" + now.Add(-24*time.Hour).Format("2006-01-02")
+
+	filePrefix := "property_"
+
+	var todayFilePath, yesterdayFilePath string
+	todayFilePath, err = getFilePath(todayDirPath, filePrefix)
+	if err != nil {
+		return
+	}
+	yesterdayFilePath, err = getFilePath(yesterdayDirPath, filePrefix)
+	if err != nil {
+		return
+	}
+	today, _, err = util.ParseCompressAccountFile(todayFilePath)
+	yesterday, _, err = util.ParseCompressAccountFile(yesterdayFilePath)
+	return
+}
+
+// 获取用户昨天和今天的sie冻结量
+func getUserLockSIEBalance(now time.Time) (yesterday map[string]float64, today map[string]float64, err error) {
+	filePrefix := "lockSIE_"
+
+	// yesterday
+	yesterdayDirPath := "sugar/" + now.Add(-24*time.Hour).Format("2006-01-02")
+	var yesterdayFilePath string
+	hasYesterday := false // 第一天上线没有昨日数据
+	yesterdayFilePath, err = getFilePath(yesterdayDirPath, filePrefix)
+	if err == nil {
+		hasYesterday = true
+	} else {
+		log.Warnf(err.Error())
+		err = nil
+	}
+	if hasYesterday {
+		yesterday, _, err = util.ParseLockSIEFile(yesterdayFilePath)
+	}
+
+	// today
+	todayDirPath := "sugar/" + now.Format("2006-01-02")
+	var todayFilePath string
+	todayFilePath, err = getFilePath(todayDirPath, filePrefix)
+	if err != nil {
+		err = fmt.Errorf("get today lockSIE file path failed: %v", err)
+		return
+	}
+	today, _, err = util.ParseLockSIEFile(todayFilePath)
+	return
+}
+
+func getAccountInAndOut(now time.Time) (in, out float64, err error) {
+	var accInPath, accOutPath string
+
+	todayDirPath := "sugar/" + now.Format("2006-01-02")
+	accInPath, err = getFilePath(todayDirPath, "account_in")
+	if err != nil {
+		err = fmt.Errorf("get account in file path failed: %v", err)
+		return
+	}
+	in, err = util.ParseAccountInOutFile(accInPath)
+	if err != nil {
+		err = fmt.Errorf("ParseAccountInOutFile failed: %v", err)
+		return
+	}
+
+	accOutPath, err = getFilePath(todayDirPath, "account_out")
+	if err != nil {
+		err = fmt.Errorf("get account out file path failed: %v", err)
+		return
+	}
+	out, err = util.ParseAccountInOutFile(accOutPath)
+	if err != nil {
+		err = fmt.Errorf("ParseAccountInOutFile failed: %v", err)
+		return
+	}
 	return
 }
 
@@ -361,15 +413,6 @@ func writeParent(uid string, details map[string]*RewardDetail) {
 		writeParent(child, details)
 	}
 	return
-}
-
-// 复制map，避免混淆引用
-func cloneMap(m map[string]float64) map[string]float64 {
-	tmp := make(map[string]float64)
-	for key, value := range m {
-		tmp[key] = value
-	}
-	return tmp
 }
 
 // 获取最新SIE销毁量
@@ -476,4 +519,90 @@ func destroyHashRates() (map[string]float64, error) {
 	}
 
 	return destroyHashRates, nil
+}
+
+func getFilePath(dirPath, filePrefix string) (string, error) {
+	dir, err := os.Open(dirPath)
+	if err != nil {
+		return "", err
+	}
+	fInfos, err := dir.Readdir(0)
+	if err != nil {
+		return "", err
+	}
+
+	for i := range fInfos {
+		fName := fInfos[i].Name()
+		if strings.HasPrefix(fName, filePrefix) {
+			return dirPath + "/" + fName, nil
+		}
+	}
+	return "", fmt.Errorf("could not found file with [%s] prefix", filePrefix)
+}
+
+func ParseRewardDetail(path string) (map[string]*RewardDetail, error) {
+	rc, err := zip.OpenReader(path)
+	if err != nil {
+		err = errors.Wrap(err, "open zip file reader")
+		return nil, err
+	}
+	defer rc.Close()
+
+	if len(rc.Reader.File) == 0 || rc.Reader.File[0] == nil {
+		err = errors.New("empty zip file")
+		return nil, err
+	}
+	f, err := rc.Reader.File[0].Open()
+	if err != nil {
+		err = errors.Wrap(err, "open zip file")
+		return nil, err
+	}
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	details := make(map[string]*RewardDetail)
+	for {
+		line, _, err := r.ReadLine()
+		if err == nil {
+			bs := bytes.Split(line, []byte(","))
+			if len(bs) == 14 {
+				uid := string(bs[0])
+				yesterdayBal, _ := strconv.ParseFloat(string(bs[1]), 64)
+				todayBal, _ := strconv.ParseFloat(string(bs[2]), 64)
+				destroyHashRate, _ := strconv.ParseFloat(string(bs[3]), 64)
+				yesterdayGrowthRate, _ := strconv.ParseFloat(string(bs[4]), 64)
+				growthRate, _ := strconv.ParseFloat(string(bs[5]), 64)
+				balanceHashRate, _ := strconv.ParseFloat(string(bs[7]), 64)
+				inviteHashRate, _ := strconv.ParseFloat(string(bs[9]), 64)
+				balanceReward, _ := strconv.ParseFloat(string(bs[10]), 64)
+				inviteReward, _ := strconv.ParseFloat(string(bs[11]), 64)
+				teamHashRate, _ := strconv.ParseFloat(string(bs[12]), 64)
+				parentUID := string(bs[13])
+
+				rewardDetail := RewardDetail{
+					YesterdayBal:        yesterdayBal,
+					TodayBal:            todayBal,
+					DestroyHashRate:     destroyHashRate,
+					YesterdayGrowthRate: yesterdayGrowthRate,
+					GrowthRate:          growthRate,
+					BalanceHashRate:     balanceHashRate,
+					InviteHashRate:      inviteHashRate,
+					BalanceReward:       balanceReward,
+					InviteReward:        inviteReward,
+					ParentUID:           parentUID,
+					TeamHashRate:        teamHashRate,
+				}
+
+				details[uid] = &rewardDetail
+			} else {
+				return details, err
+			}
+		} else if err == io.EOF {
+			break
+		} else {
+			err = errors.Wrap(err, "read line")
+			return details, err
+		}
+	}
+	return details, nil
 }

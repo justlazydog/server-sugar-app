@@ -204,19 +204,19 @@ func writeRewardFileByMap(filename1, filename2, fileDetail string, details map[s
 	var buf2 = bufio.NewWriter(file2)
 	var bufD = bufio.NewWriter(fileD)
 	var line string
-	for uid, detail := range details {
-		if detail.BalanceReward > 0.000000 {
-			line = fmt.Sprintf("%s,%f\n", uid, math.Floor(detail.BalanceReward*Precision)/Precision)
+	for uid, d := range details {
+		if d.BalanceReward > 0.000000 {
+			line = fmt.Sprintf("%s,%f\n", uid, math.Floor(d.BalanceReward*Precision)/Precision)
 			buf1.WriteString(line)
 		}
-		if detail.InviteReward > 0.000000 {
-			line = fmt.Sprintf("%s,%f\n", uid, math.Floor(detail.InviteReward*Precision)/Precision)
+		if d.InviteReward > 0.000000 {
+			line = fmt.Sprintf("%s,%f\n", uid, math.Floor(d.InviteReward*Precision)/Precision)
 			buf2.WriteString(line)
 		}
-		line = fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%s\n",
-			uid, detail.YesterdayBal, detail.TodayBal, detail.DestroyHashRate, detail.YesterdayGrowthRate,
-			detail.GrowthRate, detail.BalanceHashRate, detail.InviteHashRate, detail.BalanceReward, detail.InviteReward,
-			detail.TeamHashRate, detail.ParentUID)
+		line = fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%s\n",
+			uid, d.YesterdayBal, d.TodayBal, d.DestroyHashRate, d.YesterdayGrowthRate, d.GrowthRate,
+			d.BalanceHashRateView, d.BalanceHashRate, d.PureBalanceHashRate, d.InviteHashRate, d.BalanceReward,
+			d.InviteReward, d.TeamHashRate, d.ParentUID)
 		bufD.WriteString(line)
 	}
 	err1 := buf1.Flush()

@@ -113,7 +113,7 @@ type rewardDetail struct {
 
 var RewardDetail = new(rewardDetail)
 
-func (*rewardDetail) CreateTx(tx *sql.Tx, data []model.RewardDetail) error {
+func (*rewardDetail) Create(data []model.RewardDetail) error {
 	var vals []interface{}
 
 	sqlStr := "insert into reward_detail (user_id,yesterday_bal,today_bal,destroy_hash_rate,yesterday_growth_rate," +
@@ -127,7 +127,7 @@ func (*rewardDetail) CreateTx(tx *sql.Tx, data []model.RewardDetail) error {
 	// trim the last ,
 	sqlStr = sqlStr[0 : len(sqlStr)-1]
 	// prepare the statement
-	stmt, err := tx.Prepare(sqlStr)
+	stmt, err := db.MysqlCli.Prepare(sqlStr)
 	if err != nil {
 		return err
 	}

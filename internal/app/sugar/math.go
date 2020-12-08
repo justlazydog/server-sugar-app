@@ -23,7 +23,9 @@ type RewardDetail struct {
 	DestroyHashRate     float64 // 销毁算力
 	YesterdayGrowthRate float64 // 昨日增长率
 	GrowthRate          float64 // 今日增长率
+	BalanceHashRateView float64 // 虚假的持币算力（显示给用户看的）
 	BalanceHashRate     float64 // 持币算力
+	PureBalanceHashRate float64 // 持币算力 持币部分
 	InviteHashRate      float64 // 邀请算力
 	BalanceReward       float64 // 持币奖励
 	InviteReward        float64 // 邀请奖励
@@ -55,19 +57,6 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 	if _, ok := details[sysAccountB]; !ok {
 		details[sysAccountB] = &RewardDetail{}
 	}
-
-	// 计算持币算力
-	for u, d := range details { // 包含所有用户（即使持币为0）
-		if !isInWhiteList(u) {
-			// 计算增长率
-			calculateGrowthRate(d)
-			// 用户当前持币算力=用户持币量*增长率+用户的销毁算力
-			d.BalanceHashRate = d.TodayBal*d.GrowthRate + d.DestroyHashRate
-			hashRateTotal += d.BalanceHashRate
-		}
-	}
-	log.Infof("总持币算力: %f", hashRateTotal)
-
 	// make sure internal reward account exists
 	if _, ok := details[sie.SIERewardAccount]; !ok {
 		details[sie.SIERewardAccount] = &RewardDetail{
@@ -75,6 +64,31 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 			GrowthRate:          1,
 		}
 	}
+
+	// 计算持币算力
+	for u, d := range details { // 包含所有用户（即使持币为0）
+		if !isInWhiteList(u) {
+			// 计算增长率
+			calculateGrowthRate(d)
+			/*
+				λ	用户实际持币算力：
+				ν	当用户持币≥100时：
+				υ	持币算力=持币部分+销毁部分=用户持币量*增长率+用户的销毁算力
+				ν	当用户持币小于100时：
+				υ	持币算力=销毁部分=用户的销毁算力
+				υ	此时该用户持币算力中的的持币部分（用户持币量*增长率），得到的算力，自动计算到特殊账号内*/
+			d.PureBalanceHashRate = d.TodayBal * d.GrowthRate
+			if d.TodayBal >= 100 {
+				d.BalanceHashRate += d.PureBalanceHashRate + d.DestroyHashRate
+			} else {
+				d.BalanceHashRate += d.DestroyHashRate
+				details[sie.SIERewardAccount].BalanceHashRate += d.PureBalanceHashRate // 持币部分分配给系统帐号
+			}
+			d.BalanceHashRateView = d.PureBalanceHashRate + d.DestroyHashRate // 显示给用户看的
+			hashRateTotal += d.BalanceHashRateView
+		}
+	}
+	log.Infof("总持币算力: %f", hashRateTotal)
 
 	extraHashRate := hashRateTotal * 0.05
 	details[sysAccountA].BalanceHashRate += extraHashRate / 2
@@ -86,24 +100,10 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 	}()
 
 	// 计算持币奖励
-	for uid, d := range details {
-		// 持币糖果最低发放需要持有100SIE
-		rewardable := true
-		if d.TodayBal < 100 {
-			rewardable = false
-		}
-
+	for _, d := range details {
 		// 用户获得持币糖果的数量=用户个人持币算力/平台总持币算力*本次发放的糖果总和*50%, notice that sumAmount = issuerAmount / 2
 		reward := d.BalanceHashRate / hashRateTotal * sumAmount
-		if rewardable {
-			if uid == sie.SIERewardAccount { // 系统帐号
-				d.BalanceReward += reward
-			} else {
-				d.BalanceReward = reward
-			}
-		} else {
-			details[sie.SIERewardAccount].BalanceReward += reward
-		}
+		d.BalanceReward = reward
 	}
 
 	go func() {
@@ -175,15 +175,6 @@ func calculateGrowthRate(d *RewardDetail) {
 func rewardTwo(details map[string]*RewardDetail, sumAmount float64) error {
 	log.Info("start calc reward two...")
 	t := time.Now()
-	group.Cond.L.Lock()
-	for !group.RelateUpdated {
-		group.Cond.Wait()
-	}
-	group.Cond.L.Unlock()
-
-	if group.StopCalc {
-		return errors.New("received relation update stop signal")
-	}
 
 	var allMinorForce, allForce float64
 	uForeM := make(map[string]float64) // 用于持币大于100的用户算力（实际发送奖励者)
@@ -273,14 +264,14 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 		}
 		details[uid] = detail
 	}
-	teamBalHashRate = detail.BalanceHashRate
+	teamBalHashRate = detail.BalanceHashRateView
 	for _, user := range users {
 		if !isInWhiteList(user) {
 			var curProperty float64
 			detail, ok := details[user]
 			if ok {
-				curProperty = detail.BalanceHashRate
-				teamBalHashRate += detail.BalanceHashRate
+				curProperty = detail.BalanceHashRateView
+				teamBalHashRate += detail.BalanceHashRateView
 			}
 			m := make(map[string]bool)
 			subUsers, err := group.GetAllDownLineUsers(user, m)
@@ -292,8 +283,8 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 				if !isInWhiteList(v) {
 					detail, ok := details[v]
 					if ok {
-						curProperty += detail.BalanceHashRate
-						teamBalHashRate += detail.BalanceHashRate
+						curProperty += detail.BalanceHashRateView
+						teamBalHashRate += detail.BalanceHashRateView
 					}
 				}
 			}
@@ -335,5 +326,5 @@ func isInWhiteList(uid string) bool {
 func safeDiv(f1, f2 float64) (float64, bool) {
 	d1 := decimal.NewFromFloat(f1)
 	d2 := decimal.NewFromFloat(f2)
-	return d1.Div(d2).Float64()
+	return d1.DivRound(d2, 10).Float64()
 }

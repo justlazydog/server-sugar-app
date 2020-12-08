@@ -30,6 +30,7 @@ type server struct {
 	OpenCloud    string `yaml:"open_cloud"`
 	OTCHost      string `yaml:"otc_host"`
 	MerchantUUID string `yaml:"merchant_uuid"`
+	IsJobServer  bool   `yaml:"is_job_server"` // 是离线业务
 }
 
 type mysql struct {

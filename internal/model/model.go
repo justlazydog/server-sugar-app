@@ -69,7 +69,7 @@ type RewardDetail struct {
 	CreateTime          time.Time `json:"create_time"`
 	UserID              string    `json:"-"`
 	YesterdayBal        float64   `json:"-"`                 // 昨日持币
-	TodayBal            float64   `json:"-"`                 // 今日持币
+	TodayBal            float64   `json:"today_bal"`         // 今日持币
 	DestroyHashRate     float64   `json:"-"`                 // 销毁算力
 	YesterdayGrowthRate float64   `json:"-"`                 // 昨日增长率
 	GrowthRate          float64   `json:"growth_rate"`       // 今日增长率

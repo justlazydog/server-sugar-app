@@ -209,19 +209,24 @@ func Put(c *gin.Context) {
 
 func NewPut(c *gin.Context) {
 	req := struct {
-		AppID        string  `form:"app_id" binding:"required"`        // 应用ID
-		OpenID       string  `form:"open_id" binding:"required"`       // 用户ID
-		BossID       string  `form:"boss_id"`                          // 商家ID
-		OrderID      string  `form:"order_id"`                         // 挂单ID
-		MerchantUUID string  `form:"merchant_uuid" binding:"required"` // 商户号
-		Amount       float64 `form:"amount" binding:"required"`        // 挂单数量
-		Token        string  `form:"token" binding:"required"`         // 币种
-		Rate         float64 `form:"rate" binding:"required"`          // 销毁比例
+		AppID        string  `form:"app_id" binding:"required"`   // 应用ID
+		OpenID       string  `form:"open_id" binding:"required"`  // 用户ID
+		BossID       string  `form:"boss_id"`                     // 商家ID
+		MerchantUUID string  `form:"merchant_uuid" `              // 商户号
+		OrderID      string  `form:"order_id" binding:"required"` // 挂单ID
+		Amount       float64 `form:"amount" binding:"required"`   // 挂单数量
+		Token        string  `form:"token" binding:"required"`    // 币种
+		Rate         float64 `form:"rate" binding:"required"`     // 销毁比例
 	}{}
 
 	err := c.ShouldBindWith(&req, binding.Form)
 	if err != nil {
 		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	if req.BossID == "" && req.MerchantUUID == "" {
 		c.JSON(http.StatusBadRequest, generr.ParseParam)
 		return
 	}
@@ -272,21 +277,21 @@ func NewPut(c *gin.Context) {
 		return
 	}
 
-	var bossID string
+	var bossUID, boosOpenID string
 	if req.BossID != "" {
-		bossOpenID, err := dao.Oauth.GetOpenIDByAppID(req.BossID, req.AppID)
+		bossUID, err = dao.Oauth.GetUIDByAppID(req.BossID, req.AppID)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				c.JSON(http.StatusInternalServerError, generr.SugarNoTargetUser)
 				return
 			}
-			log.Errorf("err: %+v", errors.Wrap(err, "get open_id from open-cloud"))
+			log.Errorf("err: %+v", errors.Wrap(err, "get uid from open-cloud"))
 			c.JSON(http.StatusInternalServerError, generr.ServerError)
 			return
 		}
-		bossID = bossOpenID
+		boosOpenID = req.BossID
 	} else {
-		bossOpenID, err := dao.Oauth.GetOpenIDByAppID(req.MerchantUUID, req.AppID)
+		boosOpenID, err = dao.Oauth.GetOpenIDByAppID(req.MerchantUUID, req.AppID)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				c.JSON(http.StatusInternalServerError, generr.SugarNoTargetUser)
@@ -296,7 +301,7 @@ func NewPut(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, generr.ServerError)
 			return
 		}
-		bossID = bossOpenID
+		bossUID = req.MerchantUUID
 	}
 
 	req.Amount, _ = strconv.ParseFloat(amount, 64)
@@ -325,8 +330,8 @@ func NewPut(c *gin.Context) {
 
 	boss := model.Boss{
 		AppID:         req.AppID,
-		UID:           req.MerchantUUID,
-		OpenID:        bossID,
+		UID:           bossUID,
+		OpenID:        boosOpenID,
 		OrderID:       req.OrderID,
 		Amount:        req.Amount,
 		Credit:        req.Amount * BossMultiple * ExtraMultiple,

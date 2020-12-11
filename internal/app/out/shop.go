@@ -352,8 +352,8 @@ func NewPut(c *gin.Context) {
 		Data map[string]interface{} `json:"data"`
 	}{200, "success", map[string]interface{}{
 		"sie":         amount,
-		"user_credit": user.Credit,
-		"boss_credit": boss.Credit,
+		"user_credit": math.Ceil(user.Credit*100000) / 100000,
+		"boss_credit": math.Ceil(boss.Credit*100000) / 100000,
 	}})
 	return
 }

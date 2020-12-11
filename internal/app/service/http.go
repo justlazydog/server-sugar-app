@@ -2,13 +2,15 @@ package service
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"net/http"
+
 	"server-sugar-app/internal/app/group"
 	"server-sugar-app/internal/dao"
-	"time"
 
 	"server-sugar-app/config"
 	"server-sugar-app/internal/app/out"
@@ -94,11 +96,11 @@ func RunHttp() {
 	sugarGroup.POST("/upload/:token/:filename", sugar.ReceiveCalcFile)
 	sugarGroup.GET("/download/:filename", sugar.DownloadRewardFile)
 	sugarGroup.GET("/reward_detail", sugar.GetUserRewardDetail)
-	//sugarGroup.POST("/start/manual", sugar.ManualStart)
 
 	outGroup := r.Group("/out")
 	outGroup.Use(middleware.ValidateSign)
 	outGroup.PUT("/order", out.Put)
+	outGroup.PUT("/order/boss", out.NewPut)
 	outGroup.GET("/amount", out.GetUserSumDestructAmount)
 
 	srv = &http.Server{

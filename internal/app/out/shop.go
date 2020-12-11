@@ -135,12 +135,6 @@ func Put(c *gin.Context) {
 		return
 	}
 
-	//if userUID == "" {
-	//	log.Errorf("err: %+v", errors.Errorf("user_id: %s query no uid", userUID))
-	//	c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
-	//	return
-	//}
-
 	bossOpenID, err := dao.Oauth.GetOpenIDByAppID(req.MerchantUUID, req.AppID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -151,12 +145,6 @@ func Put(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, generr.ServerError)
 		return
 	}
-
-	//if bossOpenID == "" {
-	//	log.Errorf("err: %+v", errors.Errorf("user: %s query no open_id", req.MerchantUUID))
-	//	c.JSON(http.StatusBadRequest, generr.SugarNoTargetUser)
-	//	return
-	//}
 
 	req.Amount, _ = strconv.ParseFloat(amount, 64)
 
@@ -215,6 +203,152 @@ func Put(c *gin.Context) {
 		Data map[string]interface{} `json:"data"`
 	}{200, "success", map[string]interface{}{
 		"sie": amount,
+	}})
+	return
+}
+
+func NewPut(c *gin.Context) {
+	req := struct {
+		AppID        string  `form:"app_id" binding:"required"`        // 应用ID
+		OpenID       string  `form:"open_id" binding:"required"`       // 用户ID
+		BossID       string  `form:"boss_id"`                          // 商家ID
+		OrderID      string  `form:"order_id"`                         // 挂单ID
+		MerchantUUID string  `form:"merchant_uuid" binding:"required"` // 商户号
+		Amount       float64 `form:"amount" binding:"required"`        // 挂单数量
+		Token        string  `form:"token" binding:"required"`         // 币种
+		Rate         float64 `form:"rate" binding:"required"`          // 销毁比例
+	}{}
+
+	err := c.ShouldBindWith(&req, binding.Form)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	log.Infof("req: %+v", req)
+
+	var amount string
+	if strings.ToUpper(req.Token) == CNY {
+		sieAmount, err := cnyToSie(req.Amount * req.Rate)
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "transfer cny to sie"))
+			c.JSON(http.StatusInternalServerError, generr.CnyToSieErr)
+			return
+		}
+		amount = fmt.Sprintf("%.5f", math.Ceil(sieAmount*100000)/100000)
+	} else if strings.ToUpper(req.Token) == SUSD {
+		sieAmount, err := susdToSie(req.Amount * req.Rate)
+		if err != nil {
+			log.Errorf("err: %+v", errors.Wrap(err, "transfer susd to sie"))
+			c.JSON(http.StatusInternalServerError, generr.SusdToSieErr)
+			return
+		}
+		amount = fmt.Sprintf("%.5f", math.Ceil(sieAmount*100000)/100000)
+	} else {
+		amount = fmt.Sprintf("%.5f", math.Ceil(req.Amount*req.Rate*100000)/100000)
+	}
+
+	err = deductDestructAmount(config.Server.MerchantUUID, req.OrderID, req.MerchantUUID, SIE, Remark, amount)
+	if err != nil {
+		if strings.Contains(err.Error(), "enough") {
+			log.Errorf("err: %+v", errors.Wrap(err, "deduct destruct"))
+			c.JSON(http.StatusInternalServerError, generr.BalanceNotEnough)
+			return
+		}
+		log.Errorf("err: %+v", errors.Wrap(err, "deduct destruct"))
+		c.JSON(http.StatusInternalServerError, generr.DestructAmountError)
+		return
+	}
+
+	userUID, err := dao.Oauth.GetUIDByAppID(req.OpenID, req.AppID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusInternalServerError, generr.SugarNoTargetUser)
+			return
+		}
+		log.Errorf("err: %+v", errors.Wrap(err, "get uid from open-cloud"))
+		c.JSON(http.StatusInternalServerError, generr.ServerError)
+		return
+	}
+
+	var bossID string
+	if req.BossID != "" {
+		bossOpenID, err := dao.Oauth.GetOpenIDByAppID(req.BossID, req.AppID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusInternalServerError, generr.SugarNoTargetUser)
+				return
+			}
+			log.Errorf("err: %+v", errors.Wrap(err, "get open_id from open-cloud"))
+			c.JSON(http.StatusInternalServerError, generr.ServerError)
+			return
+		}
+		bossID = bossOpenID
+	} else {
+		bossOpenID, err := dao.Oauth.GetOpenIDByAppID(req.MerchantUUID, req.AppID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusInternalServerError, generr.SugarNoTargetUser)
+				return
+			}
+			log.Errorf("err: %+v", errors.Wrap(err, "get open_id from open-cloud"))
+			c.JSON(http.StatusInternalServerError, generr.ServerError)
+			return
+		}
+		bossID = bossOpenID
+	}
+
+	req.Amount, _ = strconv.ParseFloat(amount, 64)
+	user := model.User{
+		AppID:         req.AppID,
+		UID:           userUID,
+		OpenID:        req.OpenID,
+		OrderID:       req.OrderID,
+		Amount:        req.Amount,
+		Credit:        req.Amount * UserMultiple * ExtraMultiple,
+		Multiple:      UserMultiple,
+		ExtraMultiple: ExtraMultiple,
+		Flag:          1,
+	}
+
+	err = dao.User.Add(user)
+	if err != nil {
+		if strings.Contains(err.Error(), "Error 1062") {
+			c.JSON(http.StatusBadRequest, generr.RepeatOrderID)
+			return
+		}
+		log.Errorf("err: %+v", errors.Wrap(err, "add user record"))
+		c.JSON(http.StatusBadRequest, generr.ServerError)
+		return
+	}
+
+	boss := model.Boss{
+		AppID:         req.AppID,
+		UID:           req.MerchantUUID,
+		OpenID:        bossID,
+		OrderID:       req.OrderID,
+		Amount:        req.Amount,
+		Credit:        req.Amount * BossMultiple * ExtraMultiple,
+		Multiple:      BossMultiple,
+		ExtraMultiple: ExtraMultiple,
+		Flag:          1,
+	}
+	err = dao.Boss.Add(boss)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "add shop record"))
+		c.JSON(http.StatusBadRequest, generr.UpdateDB)
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Code int                    `json:"code"`
+		Msg  string                 `json:"msg"`
+		Data map[string]interface{} `json:"data"`
+	}{200, "success", map[string]interface{}{
+		"sie":         amount,
+		"user_credit": user.Credit,
+		"boss_credit": boss.Credit,
 	}})
 	return
 }

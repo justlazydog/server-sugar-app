@@ -18,19 +18,19 @@ import (
 
 // 持币奖励信息
 type RewardDetail struct {
-	YesterdayBal        float64 // 昨日持币
-	TodayBal            float64 // 今日持币
-	DestroyHashRate     float64 // 销毁算力
-	YesterdayGrowthRate float64 // 昨日增长率
-	GrowthRate          float64 // 今日增长率
-	BalanceHashRateView float64 // 虚假的持币算力（显示给用户看的）
-	BalanceHashRate     float64 // 持币算力
-	PureBalanceHashRate float64 // 持币算力 持币部分
-	InviteHashRate      float64 // 邀请算力
-	BalanceReward       float64 // 持币奖励
-	InviteReward        float64 // 邀请奖励
-	ParentUID           string  // 邀请人
-	TeamHashRate        float64 // 区域算力
+	YesterdayBal             float64 // 昨日持币
+	TodayBal                 float64 // 今日持币
+	DestroyHashRate          float64 // 销毁算力
+	YesterdayGrowthRate      float64 // 昨日增长率
+	GrowthRate               float64 // 今日增长率
+	BalanceHashRateForInvite float64 // 持币算力(用于邀请算力计算)
+	BalanceHashRate          float64 // 持币算力
+	PureBalanceHashRate      float64 // 持币算力 持币部分
+	InviteHashRate           float64 // 邀请算力
+	BalanceReward            float64 // 持币奖励
+	InviteReward             float64 // 邀请奖励
+	ParentUID                string  // 邀请人
+	TeamHashRate             float64 // 区域算力
 }
 
 /*
@@ -76,16 +76,16 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 				υ	持币算力=持币部分+销毁部分=用户持币量*增长率+用户的销毁算力
 				ν	当用户持币小于100时：
 				υ	持币算力=销毁部分=用户的销毁算力
-				υ	此时该用户持币算力中的的持币部分（用户持币量*增长率），得到的算力，自动计算到特殊账号内*/
+				υ	此时该用户持币算力中的的持币部分（用户持币量*增长率），得到的算力归0*/
 			d.PureBalanceHashRate = d.TodayBal * d.GrowthRate
 			if d.TodayBal >= 100 {
 				d.BalanceHashRate += d.PureBalanceHashRate + d.DestroyHashRate
 			} else {
 				d.BalanceHashRate += d.DestroyHashRate
-				details[sie.SIERewardAccount].BalanceHashRate += d.PureBalanceHashRate // 持币部分分配给系统帐号
+				//details[sie.SIERewardAccount].BalanceHashRate += d.PureBalanceHashRate // 持币部分分配给系统帐号
 			}
-			d.BalanceHashRateView = d.PureBalanceHashRate + d.DestroyHashRate // 显示给用户看的
-			hashRateTotal += d.BalanceHashRateView
+			d.BalanceHashRateForInvite = d.BalanceHashRate // 计算邀请算力用的。显示给用户看的
+			hashRateTotal += d.BalanceHashRateForInvite
 		}
 	}
 	log.Infof("总持币算力: %f", hashRateTotal)
@@ -142,7 +142,7 @@ func calculateGrowthRate(d *RewardDetail) {
 	if d.YesterdayGrowthRate < 1 { // 增长率最小为1
 		d.YesterdayGrowthRate = 1
 	}
-	if d.YesterdayBal > 0 {
+	if d.YesterdayBal >= 100 {
 		growthPercent, _ := safeDiv(d.TodayBal-d.YesterdayBal, d.YesterdayBal)
 		if growthPercent >= 1 { // 钱包日持币量增加n倍[100%,+∞)，增长率(昨日增长率/(n+1))
 			d.GrowthRate, _ = safeDiv(d.YesterdayGrowthRate, growthPercent+1)
@@ -176,7 +176,7 @@ func rewardTwo(details map[string]*RewardDetail, sumAmount float64) error {
 	log.Info("start calc reward two...")
 	t := time.Now()
 
-	var allMinorForce, allForce float64
+	var allForce float64
 	uForeM := make(map[string]float64) // 用于持币大于100的用户算力（实际发送奖励者)
 	for _, user := range group.Users {
 		if !isInWhiteList(user) {
@@ -188,15 +188,7 @@ func rewardTwo(details map[string]*RewardDetail, sumAmount float64) error {
 				}
 				details[user] = detail
 			}
-			if detail.TodayBal < 100 {
-				minorForce, err := calcInviteReward(user, details)
-				if err != nil {
-					return errors.Wrap(err, "calc invite reward")
-				}
-				detail.InviteHashRate = minorForce
-				allMinorForce += minorForce
-				allForce += minorForce
-			} else {
+			if detail.TodayBal >= 100 {
 				inviteForce, err := calcInviteReward(user, details)
 				if err != nil {
 					return errors.Wrap(err, "calc invite reward")
@@ -221,10 +213,10 @@ func rewardTwo(details map[string]*RewardDetail, sumAmount float64) error {
 		details[sysAccountB] = &RewardDetail{}
 	}
 
-	details[sysAccountA].InviteHashRate = allForce*0.025 + allMinorForce
+	details[sysAccountA].InviteHashRate = allForce * 0.025
 	details[sysAccountB].InviteHashRate = allForce * 0.025
 
-	uForeM[sysAccountA] = allForce*0.025 + allMinorForce
+	uForeM[sysAccountA] = allForce * 0.025
 	uForeM[sysAccountB] = allForce * 0.025
 
 	for k, v := range uForeM {
@@ -264,14 +256,14 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 		}
 		details[uid] = detail
 	}
-	teamBalHashRate = detail.BalanceHashRateView
+	teamBalHashRate = detail.BalanceHashRateForInvite
 	for _, user := range users {
 		if !isInWhiteList(user) {
 			var curProperty float64
 			detail, ok := details[user]
 			if ok {
-				curProperty = detail.BalanceHashRateView
-				teamBalHashRate += detail.BalanceHashRateView
+				curProperty = detail.BalanceHashRateForInvite
+				teamBalHashRate += detail.BalanceHashRateForInvite
 			}
 			m := make(map[string]bool)
 			subUsers, err := group.GetAllDownLineUsers(user, m)
@@ -283,8 +275,8 @@ func calcInviteReward(uid string, details map[string]*RewardDetail) (fInviteForc
 				if !isInWhiteList(v) {
 					detail, ok := details[v]
 					if ok {
-						curProperty += detail.BalanceHashRateView
-						teamBalHashRate += detail.BalanceHashRateView
+						curProperty += detail.BalanceHashRateForInvite
+						teamBalHashRate += detail.BalanceHashRateForInvite
 					}
 				}
 			}

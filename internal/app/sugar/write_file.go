@@ -215,7 +215,7 @@ func writeRewardFileByMap(filename1, filename2, fileDetail string, details map[s
 		}
 		line = fmt.Sprintf("%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%s\n",
 			uid, d.YesterdayBal, d.TodayBal, d.DestroyHashRate, d.YesterdayGrowthRate, d.GrowthRate,
-			d.BalanceHashRateView, d.BalanceHashRate, d.PureBalanceHashRate, d.InviteHashRate, d.BalanceReward,
+			d.BalanceHashRateForInvite, d.BalanceHashRate, d.PureBalanceHashRate, d.InviteHashRate, d.BalanceReward,
 			d.InviteReward, d.TeamHashRate, d.ParentUID)
 		bufD.WriteString(line)
 	}

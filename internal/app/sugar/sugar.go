@@ -340,6 +340,9 @@ func getUserSIEBalance(now time.Time) (yesterday map[string]float64, today map[s
 		return
 	}
 	today, _, err = util.ParseCompressAccountFile(todayFilePath)
+	if err != nil {
+		return nil, nil, err
+	}
 	yesterday, _, err = util.ParseCompressAccountFile(yesterdayFilePath)
 	return
 }

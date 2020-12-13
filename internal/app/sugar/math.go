@@ -188,7 +188,12 @@ func rewardTwo(details map[string]*RewardDetail, sumAmount float64) error {
 				}
 				details[user] = detail
 			}
-			if detail.TodayBal >= 100 {
+			if detail.TodayBal < 100 {
+				_, err := calcInviteReward(user, details)
+				if err != nil {
+					return errors.Wrap(err, "calc invite reward")
+				}
+			} else {
 				inviteForce, err := calcInviteReward(user, details)
 				if err != nil {
 					return errors.Wrap(err, "calc invite reward")

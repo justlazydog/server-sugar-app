@@ -515,10 +515,10 @@ func destroyHashRates() (map[string]float64, error) {
 	// notice that userDestroyedAmount and merchantDestroyedAmount may has overlapped uid.
 	destroyHashRates := make(map[string]float64, len(userDestroyedAmount))
 	for _, u := range userDestroyedAmount {
-		destroyHashRates[u.UID] += u.Credit
+		destroyHashRates[u.UID] += math.Pow(u.Credit, 1.1)
 	}
 	for _, merchant := range merchantDestroyedAmount {
-		destroyHashRates[merchant.UID] += merchant.Credit
+		destroyHashRates[merchant.UID] += math.Pow(merchant.Credit, 1.1)
 	}
 
 	return destroyHashRates, nil

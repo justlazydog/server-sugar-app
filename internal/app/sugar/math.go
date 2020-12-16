@@ -73,11 +73,11 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 			/*
 				λ	用户实际持币算力：
 				ν	当用户持币≥100时：
-				υ	持币算力=持币部分+销毁部分=用户持币量*增长率+用户的销毁算力
+				υ	持币算力=持币部分+销毁部分=用户持币量^1.1*增长率+用户的销毁算力
 				ν	当用户持币小于100时：
 				υ	持币算力=销毁部分=用户的销毁算力
 				υ	此时该用户持币算力中的的持币部分（用户持币量*增长率），得到的算力归0*/
-			d.PureBalanceHashRate = d.TodayBal * d.GrowthRate
+			d.PureBalanceHashRate = math.Pow(d.TodayBal, 1.1) * d.GrowthRate
 			if d.TodayBal >= 100 {
 				d.BalanceHashRate += d.PureBalanceHashRate + d.DestroyHashRate
 			} else {

@@ -275,6 +275,7 @@ func SaveRewardDetail(details map[string]*RewardDetail) error {
 			if err != nil {
 				log.Errorf("reward detail insert failed: %v", err)
 			}
+			time.Sleep(50 * time.Millisecond) // mysql need rest
 			rd = make([]model.RewardDetail, 0, 300)
 		}
 	}

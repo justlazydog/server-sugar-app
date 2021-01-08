@@ -275,6 +275,7 @@ func SaveRewardDetail(details map[string]*RewardDetail) error {
 			if err != nil {
 				log.Errorf("reward detail insert failed: %v", err)
 			}
+			time.Sleep(50 * time.Millisecond) // mysql need rest
 			rd = make([]model.RewardDetail, 0, 300)
 		}
 	}
@@ -431,11 +432,22 @@ func getUsedShopSIE() (usedSIE float64, err error) {
 // 获取特定账户差值信息
 func getAccountsBalanceInOrOut(accounts []string, flag int) (
 	accountMap map[string]float64, sumBalance float64, err error) {
+	shNow := time.Now().In(util.ShLoc)
+	sDate := shNow.Add(-24 * time.Hour).Format("2006-01-02")
+	eDate := shNow.Format("2006-01-02")
+	// read yesterday check point
+	in, out, err := getAccountInAndOut(time.Now().Add(-24 * time.Hour))
+	if err != nil {
+		return accountMap, sumBalance, fmt.Errorf("getAccountInAndOut failed: %v", err)
+	}
+
 	accountMap = make(map[string]float64)
 	for _, account := range accounts {
 		m := map[string]string{
-			"uid":  account,
-			"coin": "SIE",
+			"uid":        account,
+			"coin":       "SIE",
+			"start_date": sDate,
+			"end_date":   eDate,
 		}
 
 		body, _ := json.Marshal(m)
@@ -452,6 +464,7 @@ func getAccountsBalanceInOrOut(accounts []string, flag int) (
 					if err != nil {
 						return accountMap, sumBalance, err
 					}
+					balance += in
 				}
 			} else if flag == 2 {
 				if _, ok := rspMap["balance_out"].(string); ok {
@@ -459,6 +472,7 @@ func getAccountsBalanceInOrOut(accounts []string, flag int) (
 					if err != nil {
 						return accountMap, sumBalance, err
 					}
+					balance += out
 				}
 			}
 			sumBalance += balance

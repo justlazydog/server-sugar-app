@@ -179,7 +179,7 @@ func Prepare(c *gin.Context) {
 		writeFile(accInMap, 1)
 	case "account_out":
 		sie := config.SIE
-		accOutMap, _, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 2)
+		accOutMap, _, err := getAccountsBalanceInOrOut(sie.SIESubAccounts, 2)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, fmt.Errorf("get account balance out failed: %v", err))
 			return

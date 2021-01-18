@@ -70,7 +70,7 @@ type RewardDetail struct {
 	UserID              string    `json:"-"`
 	YesterdayBal        float64   `json:"-"`                 // 昨日持币
 	TodayBal            float64   `json:"today_bal"`         // 今日持币
-	DestroyHashRate     float64   `json:"-"`                 // 销毁算力
+	DestroyHashRate     float64   `json:"destroy_hash_rate"` // 销毁算力
 	YesterdayGrowthRate float64   `json:"-"`                 // 昨日增长率
 	GrowthRate          float64   `json:"growth_rate"`       // 今日增长率
 	BalanceHashRate     float64   `json:"balance_hash_rate"` // 持币算力

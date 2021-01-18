@@ -33,6 +33,19 @@ type RewardDetail struct {
 	TeamHashRate             float64 // 区域算力
 }
 
+func (r *RewardDetail) Droppable() bool {
+	return r.YesterdayBal == 0 &&
+		r.TodayBal == 0 &&
+		r.DestroyHashRate == 0 &&
+		r.YesterdayGrowthRate == 1 &&
+		r.GrowthRate == 1 &&
+		r.BalanceHashRate == 0 &&
+		r.InviteHashRate == 0 &&
+		r.BalanceReward == 0 &&
+		r.InviteReward == 0 &&
+		r.TeamHashRate == 0
+}
+
 /*
 持币糖果最低发放需要持有100SIE
 持币不足100SIE的奖励发放到一个特定的账户上。

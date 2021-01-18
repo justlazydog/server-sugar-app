@@ -254,6 +254,9 @@ func CalcReward(now time.Time) (err error) {
 func SaveRewardDetail(details map[string]*RewardDetail) error {
 	rd := make([]model.RewardDetail, 0, 300)
 	for user, detail := range details {
+		if detail.Droppable() {
+			continue
+		}
 		r := model.RewardDetail{
 			UserID:              user,
 			YesterdayBal:        detail.YesterdayBal,

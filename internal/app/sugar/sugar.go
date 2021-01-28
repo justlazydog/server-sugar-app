@@ -10,6 +10,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"server-sugar-app/internal/app/client"
 	"strconv"
 	"strings"
 	"time"
@@ -79,6 +80,10 @@ func prepare() error {
 	}
 	writeFile(accOutMap, 2)
 
+	if err := persistDEFIPledgeSIE(); err != nil {
+		return fmt.Errorf("persistDEFIPledgeSIE failed: %v", err)
+	}
+
 	return nil
 }
 
@@ -115,6 +120,19 @@ func CalcReward(now time.Time) (err error) {
 		yesterdaySIEBals[k] += v
 	}
 	for k, v := range todayLockSIEBals {
+		todaySIEBals[k] += v
+	}
+
+	// defi 质押
+	yesterdayPledges, todayPledges, err := getDEFIPledgeSIE(now)
+	if err != nil {
+		return fmt.Errorf("getDEFIPledgeSIE failed: %v", err)
+	}
+
+	for k, v := range yesterdayPledges {
+		yesterdaySIEBals[k] += v
+	}
+	for k, v := range todayPledges {
 		todaySIEBals[k] += v
 	}
 
@@ -325,6 +343,75 @@ func persistLockSIE() error {
 		return fmt.Errorf("writeLockSIEFile failed: %v", err)
 	}
 	return nil
+}
+
+// 持久化defi质押sie
+func persistDEFIPledgeSIE() error {
+	pledges, err := client.GetPledge()
+	if err != nil {
+		return fmt.Errorf("get pledge failed: %v", err)
+	}
+	_, err = writePledgeFile(pledges)
+	if err != nil {
+		return fmt.Errorf("writePledgeFile failed: %v", err)
+	}
+	return nil
+}
+
+func getDEFIPledgeSIE(now time.Time) (map[string]float64, map[string]float64, error) {
+	filePrefix := "pledge_"
+	appID := config.Server.DefiAppID
+
+	// yesterday
+	yesterdayDirPath := "sugar/" + now.Add(-24*time.Hour).Format("2006-01-02")
+	var yesterdayFilePath string
+	hasYesterday := false // 第一天上线没有昨日数据
+	yesterdayFilePath, err := getFilePath(yesterdayDirPath, filePrefix)
+	if err == nil {
+		hasYesterday = true
+	} else {
+		log.Warnf(err.Error())
+		err = nil
+	}
+	yesterday := make(map[string]float64)
+	if hasYesterday {
+		pledgeOpenID, err := util.ParsePledgeFile(yesterdayFilePath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("ParsePledgeFile failed: %v", err)
+		}
+		for openID, amount := range pledgeOpenID {
+			uid, err := dao.Oauth.GetUIDByAppID(openID, appID)
+			if err != nil {
+				log.Warnf("getDEFIPledgeSIE GetUIDByAppID failed: %v", err)
+				continue
+			}
+			yesterday[uid] = amount
+		}
+	}
+
+	// today
+	todayDirPath := "sugar/" + now.Format("2006-01-02")
+	var todayFilePath string
+	todayFilePath, err = getFilePath(todayDirPath, filePrefix)
+	if err != nil {
+		err = fmt.Errorf("get pledge file path failed: %v", err)
+		return nil, nil, err
+	}
+	pledgeOpenID, err := util.ParsePledgeFile(todayFilePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("ParsePledgeFile failed: %v", err)
+	}
+
+	today := make(map[string]float64)
+	for openID, amount := range pledgeOpenID {
+		uid, err := dao.Oauth.GetUIDByAppID(openID, appID)
+		if err != nil {
+			log.Warnf("getDEFIPledgeSIE GetUIDByAppID failed: %v", err)
+			continue
+		}
+		today[uid] = amount
+	}
+	return yesterday, today, nil
 }
 
 // 获取用户昨天和今天的sie持币量

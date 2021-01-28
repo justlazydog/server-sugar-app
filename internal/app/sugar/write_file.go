@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"server-sugar-app/internal/app/client"
 	"time"
 
 	"github.com/pkg/errors"
@@ -126,6 +127,27 @@ func writeLockSIEFile(lockSIE map[string]float64) (string, error) {
 
 	for uid, v := range lockSIE {
 		str := fmt.Sprintf("%s,%f\n", uid, v)
+		_, err = f.WriteString(str)
+		if err != nil {
+			log.Warnf("err: %+v", errors.Wrap(err, "write string"))
+			return filename, err
+		}
+	}
+
+	return filename, nil
+}
+
+func writePledgeFile(pledges []client.DefiPledge) (string, error) {
+	filename := fmt.Sprintf("%s%s_%s.txt", curFilePath, "pledge_", time.Now().Format("200601021504"))
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Warnf("err: %+v", errors.Wrap(err, "create file"))
+		return filename, err
+	}
+	defer f.Close()
+
+	for _, pledge := range pledges {
+		str := fmt.Sprintf("%s,%s,%s\n", pledge.OpenID, pledge.Token, pledge.Amount)
 		_, err = f.WriteString(str)
 		if err != nil {
 			log.Warnf("err: %+v", errors.Wrap(err, "write string"))

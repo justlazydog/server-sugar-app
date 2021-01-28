@@ -23,14 +23,16 @@ var (
 
 // Server 配置
 type server struct {
-	Env          string `yaml:"env"`
-	Host         string `yaml:"host"`
-	Port         string `yaml:"port"`
-	DomainName   string `yaml:"domain_name"`
-	OpenCloud    string `yaml:"open_cloud"`
-	OTCHost      string `yaml:"otc_host"`
-	MerchantUUID string `yaml:"merchant_uuid"`
-	IsJobServer  bool   `yaml:"is_job_server"` // 是离线业务
+	Env           string `yaml:"env"`
+	Host          string `yaml:"host"`
+	Port          string `yaml:"port"`
+	DomainName    string `yaml:"domain_name"`
+	OpenCloud     string `yaml:"open_cloud"`
+	OTCHost       string `yaml:"otc_host"`
+	MerchantUUID  string `yaml:"merchant_uuid"`
+	IsJobServer   bool   `yaml:"is_job_server"` // 是离线业务
+	DefiPledgeURL string `yaml:"defi_pledge_url"`
+	DefiAppID     string `yaml:"defi_app_id"`
 }
 
 type mysql struct {

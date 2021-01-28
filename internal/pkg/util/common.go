@@ -137,6 +137,41 @@ func ParseLockSIEFile(filename string) (m map[string]float64, sumBalance float64
 	return
 }
 
+func ParsePledgeFile(filename string) (m map[string]float64, err error) {
+
+	f, err := os.Open(filename)
+	if err != nil {
+		err = fmt.Errorf("open file %s failed: %v", filename, err)
+		return
+	}
+	r := bufio.NewReader(f)
+
+	m = make(map[string]float64)
+	for {
+		line, _, err := r.ReadLine()
+		if err == nil {
+			bs := bytes.Split(line, []byte(","))
+			if len(bs) == 3 && string(bs[1]) == "SIE" {
+				openID := string(bytes.TrimSpace(bs[0]))
+				balance, err := strconv.ParseFloat(string(bytes.TrimSpace(bs[2])), 64)
+				if err != nil {
+					err = errors.Wrap(err, "parse string to float")
+					return m, err
+				}
+				m[openID] = balance
+			} else {
+				return m, err
+			}
+		} else if err == io.EOF {
+			break
+		} else {
+			err = errors.Wrap(err, "read line")
+			return m, err
+		}
+	}
+	return
+}
+
 func ParseGrowthRateFile(path string) (map[string]float64, error) {
 	rc, err := zip.OpenReader(path)
 	if err != nil {

@@ -162,6 +162,11 @@ func GetUserRewardDetail(c *gin.Context) {
 func Prepare(c *gin.Context) {
 	prepare := c.Param("prepare")
 	switch prepare {
+	case "pledge":
+		if err := persistDEFIPledgeSIE(); err != nil {
+			c.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
 	case "lock_sie":
 		if err := persistLockSIE(); err != nil {
 			c.JSON(http.StatusInternalServerError, err.Error())

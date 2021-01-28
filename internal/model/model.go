@@ -80,3 +80,11 @@ type RewardDetail struct {
 	ParentUID           string    `json:"-"`                 // 邀请人
 	TeamHashRate        float64   `json:"-"`                 // 区域算力
 }
+
+type AppUsed struct {
+	CreatedAt int64   `json:"created_at,omitempty"`
+	AppID     string  `json:"app_id"`
+	AppName   string  `json:"app_name"`
+	Amount    float64 `json:"amount"`
+	Credit    float64 `json:"credit"`
+}

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -451,4 +452,119 @@ func ListBossCreditDetail(c *gin.Context) {
 		List []model.Boss `json:"list"`
 	}{Num: num, List: boss}})
 	return
+}
+
+func GetUserUsed(c *gin.Context) {
+	req := struct {
+		UserID   string `form:"user_id" binding:"required"`
+		PageNum  int    `form:"page_num"`
+		PageSize int    `form:"page_size"`
+	}{}
+
+	err := c.ShouldBindWith(&req, binding.Form)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	if req.PageNum <= 0 {
+		req.PageNum = 1
+	}
+
+	if req.PageSize < 0 || req.PageSize > 100 {
+		req.PageSize = 20
+	}
+
+	list, err := dao.User.ListAppUsed(req.UserID, req.PageSize, req.PageNum)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "list app used"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", list})
+}
+
+func GetBossUsed(c *gin.Context) {
+	req := struct {
+		UserID   string `form:"user_id" binding:"required"`
+		PageNum  int    `form:"page_num"`
+		PageSize int    `form:"page_size"`
+	}{}
+
+	err := c.ShouldBindWith(&req, binding.Form)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	if req.PageNum <= 0 {
+		req.PageNum = 1
+	}
+
+	if req.PageSize < 0 || req.PageSize > 100 {
+		req.PageSize = 20
+	}
+
+	list, err := dao.Boss.ListAppUsed(req.UserID, req.PageSize, req.PageNum)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "list app used"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", list})
+}
+
+func GetUsedDetail(c *gin.Context) {
+	req := struct {
+		UserID   string `form:"user_id" binding:"required"`
+		AppID    string `form:"app_id" binding:"required"`
+		Type     int    `form:"type"`
+		PageNum  int    `form:"page_num"`
+		PageSize int    `form:"page_size"`
+	}{}
+
+	err := c.ShouldBindWith(&req, binding.Form)
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "should bind"))
+		c.JSON(http.StatusBadRequest, generr.ParseParam)
+		return
+	}
+
+	if req.PageNum <= 0 {
+		req.PageNum = 1
+	}
+
+	if req.PageSize < 0 || req.PageSize > 100 {
+		req.PageSize = 20
+	}
+
+	var list []model.AppUsed
+	if req.Type == 1 {
+		list, err = dao.User.ListAppUsedDetail(req.UserID, req.AppID, req.PageSize, req.PageNum)
+	} else {
+		list, err = dao.Boss.ListAppUsedDetail(req.UserID, req.AppID, req.PageSize, req.PageNum)
+	}
+	if err != nil {
+		log.Errorf("err: %+v", errors.Wrap(err, "list app used detail"))
+		c.JSON(http.StatusInternalServerError, generr.ReadDB)
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data"`
+	}{200, "success", list})
 }

@@ -92,6 +92,10 @@ func RunHttp() {
 	shopGroup.GET("/boss/credit/list", shop.ListBossCredit)
 	shopGroup.GET("/boss/credit/detail/list", shop.ListBossCreditDetail)
 
+	shopGroup.GET("/user/used/list", shop.GetUserUsed)
+	shopGroup.GET("/boss/used/list", shop.GetBossUsed)
+	shopGroup.GET("/used/detail/list", shop.GetUsedDetail)
+
 	sugarGroup := r.Group("/sugar")
 	sugarGroup.POST("/upload/:token/:filename", sugar.ReceiveCalcFile)
 	sugarGroup.GET("/download/:filename", sugar.DownloadRewardFile)

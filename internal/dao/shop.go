@@ -198,6 +198,60 @@ group by
 	return result, nil
 }
 
+func (*user) ListAppUsed(userID string, size, num int) ([]model.AppUsed, error) {
+	rows, err := db.MysqlCli.Query(`select shop_user.app_id, app_name, sum(amount) amount, sum(credit) credit
+from shop_user
+         inner join app
+                    on shop_user.app_id = app.app_id
+                        and uid = ?
+group by app_id
+limit ? offset ?;`, userID, size, num-1)
+	if err != nil {
+		return nil, err
+	}
+
+	var ress []model.AppUsed
+	for rows.Next() {
+		var res model.AppUsed
+		err = rows.Scan(&res.AppID, &res.AppName, &res.Amount, &res.Credit)
+		if err != nil {
+			return nil, err
+		}
+		ress = append(ress, res)
+	}
+
+	return ress, nil
+}
+
+func (*user) ListAppUsedDetail(userID, appID string, size, num int) ([]model.AppUsed, error) {
+	rows, err := db.MysqlCli.Query(`select created_at, shop_user.app_id, app_name, amount, credit
+from shop_user
+         inner join app
+                    on shop_user.app_id = app.app_id
+                        and uid = ? and shop_user.app_id = ?
+limit ? offset ?;`, userID, appID, size, num-1)
+	if err != nil {
+		return nil, err
+	}
+
+	var ress []model.AppUsed
+	for rows.Next() {
+		var (
+			createdAt string
+			res       model.AppUsed
+		)
+		err = rows.Scan(&createdAt, &res.AppID, &res.AppName, &res.Amount, &res.Credit)
+		if err != nil {
+			return nil, err
+		}
+		t, _ := time.Parse("2006-01-02 15:04:05", createdAt)
+		res.CreatedAt = t.Unix()
+		ress = append(ress, res)
+	}
+
+	return ress, nil
+}
+
 type boss struct {
 }
 
@@ -405,4 +459,58 @@ group by uid`, beginAt)
 		result = append(result, user)
 	}
 	return result, nil
+}
+
+func (*boss) ListAppUsed(userID string, size, num int) ([]model.AppUsed, error) {
+	rows, err := db.MysqlCli.Query(`select shop_boss.app_id, app_name, sum(amount) amount, sum(credit) credit
+from shop_boss
+         inner join app
+                    on shop_boss.app_id = app.app_id
+                        and uid = ?
+group by app_id
+limit ? offset ?;`, userID, size, num-1)
+	if err != nil {
+		return nil, err
+	}
+
+	var ress []model.AppUsed
+	for rows.Next() {
+		var res model.AppUsed
+		err = rows.Scan(&res.AppID, &res.AppName, &res.Amount, &res.Credit)
+		if err != nil {
+			return nil, err
+		}
+		ress = append(ress, res)
+	}
+
+	return ress, nil
+}
+
+func (*boss) ListAppUsedDetail(userID, appID string, size, num int) ([]model.AppUsed, error) {
+	rows, err := db.MysqlCli.Query(`select created_at, shop_boss.app_id, app_name, amount, credit
+from shop_boss
+         inner join app
+                    on shop_boss.app_id = app.app_id
+                        and uid = ? and shop_boss.app_id = ?
+limit ? offset ?;`, userID, appID, size, num-1)
+	if err != nil {
+		return nil, err
+	}
+
+	var ress []model.AppUsed
+	for rows.Next() {
+		var (
+			createdAt string
+			res       model.AppUsed
+		)
+		err = rows.Scan(&createdAt, &res.AppID, &res.AppName, &res.Amount, &res.Credit)
+		if err != nil {
+			return nil, err
+		}
+		t, _ := time.Parse("2006-01-02 15:04:05", createdAt)
+		res.CreatedAt = t.Unix()
+		ress = append(ress, res)
+	}
+
+	return ress, nil
 }

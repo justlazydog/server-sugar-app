@@ -100,10 +100,6 @@ func ReceiveCalcFile(c *gin.Context) {
 				calcSugar.sourceFileName = []string{}
 			}()
 			now := time.Now()
-			err = warn.Must("prepare sugar", prepare())
-			if err != nil {
-				return
-			}
 
 			err = warn.Must("calc sugar", CalcReward(now))
 			if err != nil {

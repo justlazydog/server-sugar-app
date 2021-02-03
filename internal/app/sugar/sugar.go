@@ -45,6 +45,8 @@ func StartSugar() {
 		return
 	}
 
+	prepare()
+
 	sieCfg := config.SIE
 	token := md5.Sum([]byte(util.RandString(16) + fmt.Sprintf("%d", time.Now().Unix())))
 	expectToken = fmt.Sprintf("%x", token)
@@ -56,35 +58,33 @@ func StartSugar() {
 		_, err = util.PostIMServer(v.Request, postBody)
 		if err != nil {
 			log.Errorf("err: %+v", errors.WithMessage(err, "post im server"))
-			return
 		}
 	}
 }
 
 // 计算糖果奖励前的准备工作
-func prepare() error {
+func prepare() {
 	if err := persistLockSIE(); err != nil {
-		return fmt.Errorf("persistLockSIE failed: %v", err)
+		log.Errorf("prepare persistLockSIE failed: %v", err)
 	}
 
 	sie := config.SIE
 	accInMap, _, err := getAccountsBalanceInOrOut(sie.SIEAddAccounts, 1)
 	if err != nil {
-		return errors.Wrap(err, "get account balance in")
+		log.Errorf("prepare get account balance in failed: %v", err)
 	}
 	writeFile(accInMap, 1)
 
 	accOutMap, _, err := getAccountsBalanceInOrOut(sie.SIESubAccounts, 2)
 	if err != nil {
-		return errors.Wrap(err, "get account balance out")
+		log.Errorf("prepare get account balance out failed: %v", err)
 	}
 	writeFile(accOutMap, 2)
 
 	if err := persistDEFIPledgeSIE(); err != nil {
-		return fmt.Errorf("persistDEFIPledgeSIE failed: %v", err)
+		log.Errorf("prepare persistDEFIPledgeSIE failed: %v", err)
 	}
 
-	return nil
 }
 
 // 计算糖果奖励

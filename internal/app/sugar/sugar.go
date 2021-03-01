@@ -89,7 +89,9 @@ func prepare() {
 
 // 计算糖果奖励
 func CalcReward(now time.Time) (err error) {
-	dirname := now.Format("2006-01-02") + "/"
+	nowDate := now.Format("2006-01-02")
+	yesDate := now.Add(-24 * time.Hour).Format("2006-01-02")
+	dirname := nowDate + "/"
 	curFilePath = "sugar/" + dirname
 
 	group.Cond.L.Lock()
@@ -142,7 +144,7 @@ func CalcReward(now time.Time) (err error) {
 		return fmt.Errorf("get destroyHashRates failed: %v", err)
 	}
 
-	lastSugar, err := dao.Sugar.GetLastRecord()
+	lastSugar, err := dao.Sugar.GetByDate(yesDate)
 	if err != nil {
 		return errors.Wrap(err, "get last sugar record")
 	}
@@ -178,7 +180,20 @@ func CalcReward(now time.Time) (err error) {
 		}
 	}
 
-	err = rewardOne(rewardDetails, totalIssuerAmount/2)
+	// 总持币
+	var yesterdayBalSum, todayBalSum float64
+	for _, d := range rewardDetails {
+		if d == nil {
+			continue
+		}
+		yesterdayBalSum += d.YesterdayBal
+		todayBalSum += d.TodayBal
+	}
+
+	// 用户昨日平均增长率
+	yesterdayAvgGrowthRate := getOrCrtAvgGrthRate(yesDate, rewardDetails, yesterdayBalSum, todayBalSum)
+
+	err = rewardOne(rewardDetails, totalIssuerAmount/2, yesterdayAvgGrowthRate)
 	if err != nil {
 		return fmt.Errorf("reward one failed: %v", err)
 	}
@@ -193,13 +208,15 @@ func CalcReward(now time.Time) (err error) {
 	// 记录每个人的上线
 
 	newSugar := model.Sugar{
-		Sugar:        totalIssuerAmount,
-		Currency:     curCurrency,
-		RealCurrency: curRealCurrency,
-		ShopSIE:      shopSIE,
-		ShopUsedSIE:  shopSIE - lastSugar.ShopSIE,
-		AccountIn:    sumBalanceIn,
-		AccountOut:   sumBalanceOut,
+		Sugar:         totalIssuerAmount,
+		Currency:      curCurrency,
+		RealCurrency:  curRealCurrency,
+		ShopSIE:       shopSIE,
+		ShopUsedSIE:   shopSIE - lastSugar.ShopSIE,
+		AccountIn:     sumBalanceIn,
+		AccountOut:    sumBalanceOut,
+		AvgGrowthRate: createAvgGrowthRate(rewardDetails, createAvgGrowthRateToday, yesterdayBalSum, todayBalSum),
+		Dat:           nowDate,
 	}
 	err = dao.Sugar.Create(newSugar)
 	if err != nil {

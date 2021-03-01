@@ -50,7 +50,7 @@ func (r *RewardDetail) Droppable() bool {
 持币糖果最低发放需要持有100SIE
 持币不足100SIE的奖励发放到一个特定的账户上。
 */
-func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
+func rewardOne(details map[string]*RewardDetail, sumAmount, yesterdayAvgGrowthRate float64) error {
 	log.Info("Start calc reward one...")
 	t := time.Now()
 
@@ -82,7 +82,7 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 	for u, d := range details { // 包含所有用户（即使持币为0）
 		if !isInWhiteList(u) {
 			// 计算增长率
-			calculateGrowthRate(d)
+			calculateGrowthRate(d, yesterdayAvgGrowthRate)
 			/*
 				λ	用户实际持币算力：
 				ν	当用户持币≥100时：
@@ -143,33 +143,36 @@ func rewardOne(details map[string]*RewardDetail, sumAmount float64) error {
 	return nil
 }
 
-/* 计算增长率
-增长率：每个钱包的初始增长率为1，通过每日持币量变化，增长率为
-	（（当日持有sie数量-前一日持有的sie数量）/前一日持有的sie数量*100%，如果前一日持币数量为0，则增长率为1）增长率的变化如下：
-钱包日持币量增加n%[100%,+∞)，增长率为 (昨日增长率/(n+1)) ，向下取整
-钱包日持币量增加[2%,100%)，增长率（+1）
-钱包日持币量增加不足2%，增长率（-1）
-钱包日持币量减少n%，增长率（-n），增长率最小为1
-*/
-func calculateGrowthRate(d *RewardDetail) {
+// 计算增长率
+func calculateGrowthRate(d *RewardDetail, yesterdayAvgGrowthRate float64) {
+	if d.YesterdayBal <= 0 || d.TodayBal < 100 {
+		d.GrowthRate = 1
+		return
+	}
+
+	// n represents增长量
+	n, _ := safeDiv(d.TodayBal-d.YesterdayBal, d.YesterdayBal)
+
+	exponent := 0.03 * (yesterdayAvgGrowthRate - d.YesterdayGrowthRate)
+	m := math.Pow(math.E, exponent)
+
 	if d.YesterdayGrowthRate < 1 { // 增长率最小为1
 		d.YesterdayGrowthRate = 1
 	}
-	if d.YesterdayBal >= 100 {
-		growthPercent, _ := safeDiv(d.TodayBal-d.YesterdayBal, d.YesterdayBal)
-		if growthPercent >= 1 { // 钱包日持币量增加n倍[100%,+∞)，增长率(昨日增长率/(n+1))
-			d.GrowthRate, _ = safeDiv(d.YesterdayGrowthRate, growthPercent+1)
-			d.GrowthRate = math.Floor(d.GrowthRate)
-		} else if growthPercent >= 0.02 { // 钱包日持币量增加[2%,100%)，增长率（+1）
-			d.GrowthRate = d.YesterdayGrowthRate + 1
-		} else if growthPercent >= 0 { // 钱包日持币量增加不足2%，增长率（-1）
-			d.GrowthRate = d.YesterdayGrowthRate - 1
-		} else { //钱包日持币量减少n%，增长率（-n）
-			d.GrowthRate = d.YesterdayGrowthRate + math.Floor(growthPercent*100)
-		}
-	} else {
-		d.GrowthRate = 1
+
+	if n >= 2 && n < 100 {
+		d.GrowthRate = d.YesterdayBal + m
+	} else if n >= 0 && n < 2 {
+		d.GrowthRate = d.YesterdayBal - m
+	} else if n < 0 {
+		d.GrowthRate = d.YesterdayBal - math.Floor(-n)
+	} else { // n >= 100 case
+		tmp, _ := safeDiv(n, 100)
+		tmp = math.Floor(tmp)
+		growthRate, _ := safeDiv(1, tmp+1)
+		d.GrowthRate = growthRate
 	}
+
 	if d.GrowthRate < 1 { // 增长率最小为1
 		d.GrowthRate = 1
 	}

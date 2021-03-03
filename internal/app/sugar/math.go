@@ -151,7 +151,8 @@ func calculateGrowthRate(d *RewardDetail, yesterdayAvgGrowthRate float64) {
 	}
 
 	// n represents增长量
-	n, _ := safeDiv(d.TodayBal-d.YesterdayBal, d.YesterdayBal)
+	rawN, _ := safeDiv(d.TodayBal-d.YesterdayBal, d.YesterdayBal)
+	n := rawN * 100
 
 	exponent := 0.03 * (yesterdayAvgGrowthRate - d.YesterdayGrowthRate)
 	m := math.Pow(math.E, exponent)
@@ -161,11 +162,11 @@ func calculateGrowthRate(d *RewardDetail, yesterdayAvgGrowthRate float64) {
 	}
 
 	if n >= 2 && n < 100 {
-		d.GrowthRate = d.YesterdayBal + m
+		d.GrowthRate = d.YesterdayGrowthRate + m
 	} else if n >= 0 && n < 2 {
-		d.GrowthRate = d.YesterdayBal - m
+		d.GrowthRate = d.YesterdayGrowthRate - m
 	} else if n < 0 {
-		d.GrowthRate = d.YesterdayBal - math.Floor(-n)
+		d.GrowthRate = d.YesterdayGrowthRate - math.Floor(-n)
 	} else { // n >= 100 case
 		tmp, _ := safeDiv(n, 100)
 		tmp = math.Floor(tmp)
@@ -176,6 +177,9 @@ func calculateGrowthRate(d *RewardDetail, yesterdayAvgGrowthRate float64) {
 	if d.GrowthRate < 1 { // 增长率最小为1
 		d.GrowthRate = 1
 	}
+
+	// set precision to 6
+	d.GrowthRate, _ = decimal.NewFromFloat(d.GrowthRate).Round(6).Float64()
 }
 
 /*

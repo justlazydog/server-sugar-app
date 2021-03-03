@@ -31,8 +31,8 @@ func (*sugar) Create(s model.Sugar) (err error) {
 
 func (*sugar) GetByDate(dat string) (s model.Sugar, err error) {
 	sqlStr := "select create_time,sugar,currency,real_currency,shop_sie,shop_used_sie,account_in,account_out,avg_growth_rate,dat from " +
-		"sugars where dat = ? order by id desc limit 1"
-	row := db.MysqlCli.QueryRow(sqlStr, dat)
+		"sugars order by id desc limit 1"
+	row := db.MysqlCli.QueryRow(sqlStr)
 	var createTime string
 	err = row.Scan(&createTime, &s.Sugar, &s.Currency, &s.RealCurrency, &s.ShopSIE, &s.ShopUsedSIE, &s.AccountIn,
 		&s.AccountOut, &s.AvgGrowthRate, &s.Dat)
